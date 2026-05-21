@@ -1,146 +1,160 @@
-// ═══════════════════════════════════════
-//         BRAINROT IQ CONSTANTS
-// ═══════════════════════════════════════
+// src/constants.js
+// ⚠️ NO API KEYS HERE - All secrets are in Vercel environment variables
+// API calls go through /api/ serverless functions
 
 export const APP_CONFIG = {
-  name: "Brainrot IQ Test",
-  url: "https://brainrot-iq.vercel.app",
-  description: "The ultimate AI-powered Gen-Z Brainrot IQ Test",
-  version: "2.0.0",
+  name: 'BrainRot IQ',
+  version: '2.0.0',
+  url: 'https://brainrot-iq.vercel.app',
+  description: 'Test your internet culture IQ',
+  apiBase: '/api', // Serverless functions base URL
 };
 
-// ─── Quiz Settings ───────────────────────
 export const QUIZ_CONFIG = {
   totalQuestions: 10,
   timePerQuestion: 20, // seconds
-  pointsPerCorrect: 10,
-  bonusTimePoints: 5,   // bonus if answered in first 5s
-  categories: ["general", "slang", "memes", "ohio", "sigma", "rizz", "skibidi"],
+  difficulties: {
+    easy: {
+      label: '😎 Easy Mode',
+      description: 'For casuals who occasionally touch grass',
+      multiplier: 1,
+      color: 'from-green-500 to-emerald-500',
+    },
+    medium: {
+      label: '🔥 Chronically Online',
+      description: 'For those who know what NPC means',
+      multiplier: 1.5,
+      color: 'from-yellow-500 to-orange-500',
+    },
+    hard: {
+      label: '🧠 Full Brainrot',
+      description: 'Only true sigma level brainrot masters',
+      multiplier: 2,
+      color: 'from-red-500 to-pink-500',
+    },
+  },
+  scoring: {
+    baseScore: 100,
+    timeBonus: {
+      fast: { threshold: 5, bonus: 50 },   // Under 5 seconds
+      medium: { threshold: 10, bonus: 25 }, // Under 10 seconds
+      slow: { threshold: 15, bonus: 10 },   // Under 15 seconds
+    },
+    streakBonus: 25, // Bonus per consecutive correct answer
+  },
 };
 
-// ─── Brainrot Levels ─────────────────────
-export const BRAINROT_LEVELS = [
+export const IQ_TIERS = [
   {
     min: 0,
     max: 10,
-    level: "NPC Energy",
-    emoji: "🤖",
-    description: "You have zero brainrot. You're basically a LinkedIn user. Touch grass, then maybe come back.",
-    color: "#6b7280",
-    gradient: "from-gray-600 to-gray-800",
-    bgColor: "rgba(107, 114, 128, 0.1)",
-    borderColor: "rgba(107, 114, 128, 0.3)",
-    badge: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    label: 'NPC Mode',
+    emoji: '🤖',
+    description: 'You probably still use Internet Explorer',
+    color: 'from-gray-500 to-gray-600',
+    bgColor: 'bg-gray-900',
+    advice: 'Bro... go touch some grass and come back when you\'ve downloaded some internet culture',
   },
   {
     min: 11,
-    max: 25,
-    level: "Normie Detected",
-    emoji: "😐",
-    description: "Some brainrot detected but you're still functioning in society. Barely.",
-    color: "#3b82f6",
-    gradient: "from-blue-600 to-blue-800",
-    bgColor: "rgba(59, 130, 246, 0.1)",
-    borderColor: "rgba(59, 130, 246, 0.3)",
-    badge: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    max: 20,
+    label: 'Casual Scroller',
+    emoji: '📱',
+    description: 'You\'ve seen memes before. In a museum.',
+    color: 'from-blue-500 to-blue-600',
+    bgColor: 'bg-blue-950',
+    advice: 'You\'ve opened TikTok at least once. Growth!',
   },
   {
-    min: 26,
-    max: 45,
-    level: "Mid Tier Enjoyer",
-    emoji: "😏",
-    description: "You know the lore but you're not fully committed. Your brain is 50% cooked.",
-    color: "#10b981",
-    gradient: "from-emerald-600 to-emerald-800",
-    bgColor: "rgba(16, 185, 129, 0.1)",
-    borderColor: "rgba(16, 185, 129, 0.3)",
-    badge: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    min: 21,
+    max: 35,
+    label: 'Main Character Era',
+    emoji: '✨',
+    description: 'Living your best life, chronically mid',
+    color: 'from-purple-500 to-purple-600',
+    bgColor: 'bg-purple-950',
+    advice: 'You\'re giving main character energy but forgetting your lines',
   },
   {
-    min: 46,
+    min: 36,
+    max: 50,
+    label: 'Internet Citizen',
+    emoji: '🌐',
+    description: 'Fluent in meme language',
+    color: 'from-indigo-500 to-violet-600',
+    bgColor: 'bg-indigo-950',
+    advice: 'Your rizz is moderate. Keep grinding.',
+  },
+  {
+    min: 51,
     max: 65,
-    level: "Sigma Aspirant",
-    emoji: "😤",
-    description: "Solid brainrot level. You know your skibidi from your rizz. Respect.",
-    color: "#8b5cf6",
-    gradient: "from-violet-600 to-violet-800",
-    bgColor: "rgba(139, 92, 246, 0.1)",
-    borderColor: "rgba(139, 92, 246, 0.3)",
-    badge: "bg-violet-500/20 text-violet-400 border-violet-500/30",
+    label: 'Chronically Online',
+    emoji: '⚡',
+    description: 'When did you last go outside?',
+    color: 'from-yellow-500 to-orange-500',
+    bgColor: 'bg-yellow-950',
+    advice: 'Your brain is beautifully rotted. Touch grass occasionally.',
   },
   {
     min: 66,
     max: 80,
-    level: "Certified Gyatt Lord",
-    emoji: "🔥",
-    description: "Your brain is beautifully cooked. You eat brainrot content for breakfast.",
-    color: "#f59e0b",
-    gradient: "from-amber-500 to-orange-600",
-    bgColor: "rgba(245, 158, 11, 0.1)",
-    borderColor: "rgba(245, 158, 11, 0.3)",
-    badge: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    label: 'Certified Brainrot',
+    emoji: '🧠',
+    description: 'Memes are your second language',
+    color: 'from-orange-500 to-red-500',
+    bgColor: 'bg-orange-950',
+    advice: 'Full send on the brainrot. No ragrets.',
   },
   {
     min: 81,
     max: 90,
-    level: "Ohio Overlord",
-    emoji: "👑",
-    description: "Only in Ohio could someone achieve this level of brainrot. You are the lore.",
-    color: "#ec4899",
-    gradient: "from-pink-500 to-rose-600",
-    bgColor: "rgba(236, 72, 153, 0.1)",
-    borderColor: "rgba(236, 72, 153, 0.3)",
-    badge: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+    label: 'Sigma Grindset',
+    emoji: '👑',
+    description: 'Operating on a different wavelength',
+    color: 'from-pink-500 to-rose-600',
+    bgColor: 'bg-pink-950',
+    advice: 'You ate and left no crumbs. Understood the assignment.',
   },
   {
     min: 91,
     max: 100,
-    level: "FINAL BOSS SIGMA",
-    emoji: "⚡",
-    description: "MAXIMUM BRAINROT ACHIEVED. You ARE the brainrot. The internet fears you.",
-    color: "#00f5ff",
-    gradient: "from-cyan-400 to-blue-600",
-    bgColor: "rgba(0, 245, 255, 0.1)",
-    borderColor: "rgba(0, 245, 255, 0.3)",
-    badge: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+    label: 'Supreme BrainRot Lord',
+    emoji: '🚀',
+    description: 'You ARE the algorithm',
+    color: 'from-violet-500 via-purple-500 to-pink-500',
+    bgColor: 'bg-violet-950',
+    advice: 'You are the chosen one. The algorithm bows to you.',
   },
 ];
 
-// ─── Get level from score ─────────────────
-export const getBrainrotLevel = (score) => {
-  return BRAINROT_LEVELS.find((l) => score >= l.min && score <= l.max) || BRAINROT_LEVELS[0];
+export const getIQTier = (score, total = 10) => {
+  const percentage = Math.round((score / total) * 100);
+  return IQ_TIERS.find(tier => percentage >= tier.min && percentage <= tier.max) || IQ_TIERS[0];
 };
 
-// ─── Share Messages ───────────────────────
+export const CATEGORIES = [
+  'TikTok Culture',
+  'Gen-Z Slang',
+  'Meme History',
+  'Viral Moments',
+  'Internet Beef',
+  'Gaming Culture',
+  'Social Media',
+  'Brainrot Content',
+  'Sigma Culture',
+  'Twitter/X Drama',
+];
+
 export const SHARE_MESSAGES = [
-  "I just scored {score}/100 on the Brainrot IQ Test! My level: {level} {emoji}",
-  "My brainrot is officially '{level}' {emoji} — I scored {score}/100 on the Brainrot IQ Test!",
-  "Just took the Brainrot IQ Test and got {score}/100. I am {level} {emoji} certified!",
-  "The AI judged my brainrot level as '{level}' {emoji} — scored {score}/100. Take the test!",
+  (score, tier) => `just scored ${score}/10 on @BrainRotIQ and got "${tier}" 🧠 can you beat me? brainrot-iq.vercel.app`,
+  (score, tier) => `my brainrot IQ is "${tier}" with ${score}/10 correct 💀 take the quiz: brainrot-iq.vercel.app`,
+  (score, tier) => `${score}/10 on the brainrot quiz 🔥 they called me "${tier}" lmaooo brainrot-iq.vercel.app`,
 ];
 
-// ─── Fun Loading Messages ─────────────────
-export const LOADING_MESSAGES = [
-  "Calibrating your brainrot detector... 🧠",
-  "Consulting the Ohio council... 🏛️",
-  "Measuring your sigma levels... 📊",
-  "Analyzing your rizz quotient... 💅",
-  "Running skibidi diagnostics... 🚽",
-  "Computing your gyatt score... 📐",
-  "Checking if you're cooked... 🍳",
-  "Summoning the AI overlords... 👾",
-];
-
-// ─── Answer Letters ───────────────────────
-export const ANSWER_LETTERS = ["A", "B", "C", "D"];
-
-// ─── Leaderboard ─────────────────────────
-export const LEADERBOARD_CONFIG = {
-  limit: 50,
-  refreshInterval: 30000, // 30 seconds
+export const SOUND_URLS = {
+  correct: '/sounds/correct.mp3',
+  wrong: '/sounds/wrong.mp3',
+  tick: '/sounds/tick.mp3',
+  complete: '/sounds/complete.mp3',
+  click: '/sounds/click.mp3',
 };
-
-// ─── Sounds ──────────────────────────────
-export const SOUND_ENABLED_KEY = "brainrot_sound_enabled";
-export const PLAYER_NAME_KEY = "brainrot_player_name";
-export const PLAYER_ID_KEY = "brainrot_player_id";
