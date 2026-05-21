@@ -4,99 +4,86 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Graceful handling if env vars missing
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Supabase environment variables not found. Leaderboard features will be disabled.');
+let supabaseClient = null;
+
+if (supabaseUrl && supabaseAnonKey) {
+  try {
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+    });
+  } catch (err) {
+    console.warn('Supabase init failed:', err.message);
+  }
+} else {
+  console.warn('Supabase env vars missing - leaderboard disabled');
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-      },
-      global: {
-        headers: {
-          'x-application-name': 'brainrot-iq',
-        },
-      },
-    })
-  : null;
+export const supabase = supabaseClient;
 
-// Database operations with error handling
 export const db = {
-  // Submit score to leaderboard
   async submitScore({ name, score, total, difficulty, timeTaken, tier }) {
-    if (!supabase) return { data: null, error: 'Supabase not configured' };
-    
+    if (!supabaseClient) return { data: null, error: 'Supabase not configured' };
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('scores')
         .insert([{
-          name: name.trim().substring(0, 20), // Max 20 chars
-          score,
-          total,
-          difficulty,
-          time_taken: timeTaken,
-          tier,
+          name: String(name).trim().substring(0, 20),
+          score: Number(score),
+          total: Number(total),
+          difficulty: String(difficulty),
+          time_taken: Number(timeTaken),
+          tier: String(tier),
           percentage: Math.round((score / total) * 100),
           created_at: new Date().toISOString(),
         }])
         .select();
-      
       return { data, error };
     } catch (err) {
-      console.error('Error submitting score:', err);
+      console.error('submitScore error:', err);
       return { data: null, error: err.message };
     }
   },
 
-  // Get leaderboard
   async getLeaderboard({ limit = 100, difficulty = null } = {}) {
-    if (!supabase) return { data: [], error: null };
-    
+    if (!supabaseClient) return { data: [], error: null };
     try {
-      let query = supabase
+      let query = supabaseClient
         .from('scores')
         .select('*')
         .order('score', { ascending: false })
         .order('time_taken', { ascending: true })
         .limit(limit);
-      
-      if (difficulty) {
-        query = query.eq('difficulty', difficulty);
-      }
-      
+      if (difficulty) query = query.eq('difficulty', difficulty);
       const { data, error } = await query;
       return { data: data || [], error };
     } catch (err) {
-      console.error('Error fetching leaderboard:', err);
+      console.error('getLeaderboard error:', err);
       return { data: [], error: err.message };
     }
   },
 
-  // Get stats
   async getStats() {
-    if (!supabase) return { data: null, error: null };
-    
+    if (!supabaseClient) return { data: null, error: null };
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('scores')
         .select('score, total, difficulty')
         .limit(1000);
-      
       if (error || !data) return { data: null, error };
-      
-      const stats = {
-        totalPlayers: data.length,
-        averageScore: data.reduce((acc, s) => acc + (s.score / s.total * 100), 0) / data.length,
-        highestScore: Math.max(...data.map(s => s.score)),
+      return {
+        data: {
+          totalPlayers: data.length,
+          averageScore: data.length > 0
+            ? data.reduce((acc, s) => acc + (s.score / s.total * 100), 0) / data.length
+            : 0,
+          highestScore: data.length > 0 ? Math.max(...data.map(s => s.score)) : 0,
+        },
+        error: null,
       };
-      
-      return { data: stats, error: null };
     } catch (err) {
       return { data: null, error: err.message };
     }
   },
 };
 
-export default supabase;
+export default supabaseClient;
