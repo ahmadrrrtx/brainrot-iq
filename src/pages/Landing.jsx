@@ -1,413 +1,302 @@
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSound } from "../hooks/useSound";
-import { BRAINROT_LEVELS } from "../constants";
+// src/pages/Landing.jsx
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { storage } from '../utils';
+import { QUIZ_CONFIG } from '../constants';
 
-// ─── Particle component ───────────────────
-function Particle({ style }) {
-  return <div className="particle" style={style} />;
-}
+const FLOATING_EMOJIS = ['🧠', '🔥', '💀', '✨', '🚀', '👑', '⚡', '🎯', '💯', '🤯'];
 
-// ─── Floating emoji ───────────────────────
-function FloatingEmoji({ emoji, style }) {
-  return (
-    <div
-      className="absolute text-2xl pointer-events-none select-none opacity-20 animate-float"
-      style={style}
-    >
-      {emoji}
-    </div>
-  );
-}
+const TICKER_ITEMS = [
+  '🧠 Test your brainrot IQ',
+  '🔥 New AI questions every time',
+  '💀 No cap, this quiz hits different',
+  '✨ Understood the assignment?',
+  '🚀 Sigma grindset activated',
+  '👑 Only true chronically online players pass',
+  '⚡ Are you NPC or main character?',
+];
 
-// ─── Stat card ────────────────────────────
-function StatCard({ value, label, icon }) {
-  const [displayed, setDisplayed] = useState(0);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          let start = 0;
-          const end = parseInt(value.replace(/\D/g, ""));
-          const duration = 1500;
-          const increment = end / (duration / 16);
-          const timer = setInterval(() => {
-            start += increment;
-            if (start >= end) {
-              setDisplayed(end);
-              clearInterval(timer);
-            } else {
-              setDisplayed(Math.floor(start));
-            }
-          }, 16);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [value]);
-
-  const suffix = value.replace(/[0-9]/g, "").trim();
-
-  return (
-    <div ref={ref} className="glass-card p-6 text-center hover:scale-105 transition-transform duration-300">
-      <div className="text-3xl mb-2">{icon}</div>
-      <div className="text-3xl font-display font-bold gradient-text">
-        {displayed.toLocaleString()}{suffix}
-      </div>
-      <div className="text-white/50 text-sm mt-1">{label}</div>
-    </div>
-  );
-}
-
-// ─── Level card ───────────────────────────
-function LevelCard({ level, index }) {
-  return (
-    <div
-      className="glass-card p-4 flex items-center gap-3 hover:scale-105 transition-all duration-300 animate-fade-up"
-      style={{
-        animationDelay: `${index * 80}ms`,
-        borderColor: level.borderColor,
-        background: level.bgColor,
-      }}
-    >
-      <div className="text-2xl">{level.emoji}</div>
-      <div className="flex-1 min-w-0">
-        <div className="font-semibold text-sm text-white/90 truncate">{level.level}</div>
-        <div className="text-xs text-white/40">{level.min}–{level.max} pts</div>
-      </div>
-      <div
-        className="w-2 h-2 rounded-full flex-shrink-0"
-        style={{ background: level.color, boxShadow: `0 0 6px ${level.color}` }}
-      />
-    </div>
-  );
-}
-
-// ─── Feature card ─────────────────────────
-function FeatureCard({ icon, title, description, delay }) {
-  return (
-    <div
-      className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-fade-up"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{icon}</div>
-      <h3 className="font-display font-bold text-white mb-2">{title}</h3>
-      <p className="text-white/50 text-sm leading-relaxed">{description}</p>
-    </div>
-  );
-}
-
-// ─── MAIN LANDING ─────────────────────────
 export default function Landing() {
   const navigate = useNavigate();
-  const { sounds } = useSound();
-  const [particles, setParticles] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [name, setName] = useState('');
+  const [difficulty, setDifficulty] = useState('medium');
+  const [nameError, setNameError] = useState('');
+  const [tickerIndex, setTickerIndex] = useState(0);
+  const savedName = storage.get('playerName', '');
 
   useEffect(() => {
-    const emojis = ["🧠", "⚡", "🔥", "💀", "👑", "🎯", "🚀", "💎"];
-    const generated = Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      emoji: emojis[Math.floor(Math.random() * emojis.length)],
-      style: {
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-        animationDelay: `${Math.random() * 3}s`,
-        animationDuration: `${3 + Math.random() * 4}s`,
-        fontSize: `${1 + Math.random() * 1.5}rem`,
-      },
-    }));
-    setParticles(generated);
+    const interval = setInterval(() => {
+      setTickerIndex(prev => (prev + 1) % TICKER_ITEMS.length);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleStart = () => {
-    sounds.click();
-    navigate("/quiz");
+    const playerName = savedName || name;
+    if (!playerName.trim() || playerName.trim().length < 2) {
+      setNameError('Enter your name (min 2 chars)');
+      return;
+    }
+    storage.set('playerName', playerName.trim());
+    navigate(`/quiz?difficulty=${difficulty}`);
   };
 
-  const features = [
-    {
-      icon: "🤖",
-      title: "AI-Powered Questions",
-      description: "Every quiz is uniquely generated by Groq AI in real-time. No two tests are the same.",
-    },
-    {
-      icon: "🏆",
-      title: "Global Leaderboard",
-      description: "Compete against players worldwide. Rise through the ranks and claim your spot.",
-    },
-    {
-      icon: "⚡",
-      title: "Lightning Fast",
-      description: "Powered by Groq's ultra-fast inference. Questions generated in milliseconds.",
-    },
-    {
-      icon: "🎯",
-      title: "7 Brainrot Tiers",
-      description: "From NPC Energy to Final Boss Sigma — discover exactly how cooked you are.",
-    },
-    {
-      icon: "📱",
-      title: "Share Your Results",
-      description: "Flex your brainrot level on Twitter, Instagram, WhatsApp and more.",
-    },
-    {
-      icon: "🔥",
-      title: "No Signup Needed",
-      description: "Just enter your name and start. Free forever, no accounts, no BS.",
-    },
-  ];
-
-  const stats = [
-    { value: "10", label: "Questions Per Test", icon: "❓" },
-    { value: "7", label: "Brainrot Levels", icon: "🎯" },
-    { value: "100", label: "Max Score Possible", icon: "💯" },
-    { value: "20", label: "Seconds Per Question", icon: "⏱️" },
-  ];
+  const handleNameChange = (e) => {
+    const val = e.target.value;
+    setName(val);
+    if (val.trim().length >= 2) setNameError('');
+  };
 
   return (
-    <div className="relative overflow-hidden">
-      {/* ── Background ── */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-hero-gradient" />
-        <div className="absolute inset-0 bg-grid opacity-40" />
-        {/* Gradient orbs */}
-        <div className="absolute top-20 left-10 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: "radial-gradient(circle, #7c3aed, transparent)" }} />
-        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: "radial-gradient(circle, #ec4899, transparent)" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-10"
-          style={{ background: "radial-gradient(circle, #06b6d4, transparent)" }} />
-      </div>
-
-      {/* ── Floating Emojis ── */}
-      <div className="fixed inset-0 -z-5 pointer-events-none overflow-hidden">
-        {particles.map((p) => (
-          <FloatingEmoji key={p.id} emoji={p.emoji} style={p.style} />
+    <div className="min-h-screen bg-[#0a0a14] overflow-hidden relative">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-900/10 rounded-full blur-3xl" />
+        
+        {/* Grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `linear-gradient(rgba(124,58,237,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.5) 1px, transparent 1px)`,
+            backgroundSize: '50px 50px',
+          }}
+        />
+        
+        {/* Floating emojis */}
+        {FLOATING_EMOJIS.map((emoji, i) => (
+          <motion.div
+            key={i}
+            className="absolute text-4xl select-none pointer-events-none"
+            style={{
+              left: `${5 + (i * 10) % 90}%`,
+              top: `${10 + (i * 13) % 80}%`,
+            }}
+            animate={{
+              y: [-20, 20, -20],
+              x: [-10, 10, -10],
+              rotate: [-10, 10, -10],
+              opacity: [0.15, 0.4, 0.15],
+            }}
+            transition={{
+              duration: 4 + i * 0.5,
+              repeat: Infinity,
+              delay: i * 0.3,
+            }}
+          >
+            {emoji}
+          </motion.div>
         ))}
       </div>
 
-      {/* ════════════════════════════════════ */}
-      {/*              HERO SECTION           */}
-      {/* ════════════════════════════════════ */}
-      <section className="min-h-[92vh] flex flex-col items-center justify-center px-4 py-16 text-center">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 animate-fade-in"
-          style={{
-            background: "rgba(124,58,237,0.15)",
-            border: "1px solid rgba(124,58,237,0.3)",
-          }}>
-          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          <span className="text-sm font-medium text-purple-300">
-            AI-Powered · Free · No Signup
-          </span>
-        </div>
+      {/* Ticker */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-violet-600/90 backdrop-blur-sm overflow-hidden h-8 flex items-center">
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={tickerIndex}
+            className="text-white text-sm font-medium w-full text-center"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {TICKER_ITEMS[tickerIndex]}
+          </motion.span>
+        </AnimatePresence>
+      </div>
 
-        {/* Main Heading */}
-        <div className="animate-fade-up">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-bold leading-none mb-6">
-            <span className="block text-white">How</span>
-            <span className="block gradient-text">Cooked</span>
-            <span className="block text-white">Is Your Brain?</span>
+      {/* Main Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 pt-8">
+        
+        {/* Hero Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+          className="text-center mb-10"
+        >
+          {/* Badge */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 bg-violet-600/20 border border-violet-500/30 rounded-full px-4 py-1.5 mb-6"
+          >
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-violet-300 text-sm font-medium">AI-Powered • Free • No Signup</span>
+          </motion.div>
+
+          {/* Main Title */}
+          <h1 className="text-5xl sm:text-7xl md:text-8xl font-black mb-4 leading-none">
+            <span className="block bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              BrainRot
+            </span>
+            <span className="block text-white">
+              IQ
+              <span className="text-violet-400">.</span>
+            </span>
           </h1>
-        </div>
 
-        {/* Subheading */}
-        <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 animate-fade-up animate-delay-200 leading-relaxed">
-          The ultimate <strong className="text-purple-300">AI-generated Gen-Z IQ Test</strong>.
-          10 questions. 20 seconds each. Discover your brainrot level and flex on the global leaderboard.
-        </p>
+          {/* Subtitle */}
+          <p className="text-gray-400 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed">
+            How <span className="text-violet-400 font-semibold">chronically online</span> are you?
+            <br />
+            AI-generated questions. No cap.
+          </p>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up animate-delay-300">
-          <button
-            onClick={handleStart}
-            className="btn-neon flex items-center gap-2 text-lg px-10 py-5"
-          >
-            <span>Start Test</span>
-            <span className="text-xl">⚡</span>
-          </button>
-          <button
-            onClick={() => { sounds.click(); navigate("/leaderboard"); }}
-            className="btn-ghost flex items-center gap-2 text-lg px-8 py-5"
-          >
-            <span>🏆</span>
-            <span>Leaderboard</span>
-          </button>
-        </div>
-
-        {/* Trust indicators */}
-        <div className="flex items-center gap-6 mt-10 animate-fade-up animate-delay-500">
-          <div className="flex items-center gap-1.5 text-white/40 text-sm">
-            <span>✅</span> Free forever
-          </div>
-          <div className="w-px h-4 bg-white/10" />
-          <div className="flex items-center gap-1.5 text-white/40 text-sm">
-            <span>🔒</span> No account
-          </div>
-          <div className="w-px h-4 bg-white/10" />
-          <div className="flex items-center gap-1.5 text-white/40 text-sm">
-            <span>⚡</span> Instant results
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce opacity-40">
-          <div className="w-5 h-8 border-2 border-white/30 rounded-full flex justify-center pt-1">
-            <div className="w-1 h-2 bg-white/60 rounded-full animate-bounce" />
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════ */}
-      {/*            STATS SECTION            */}
-      {/* ════════════════════════════════════ */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {stats.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════ */}
-      {/*          BRAINROT LEVELS            */}
-      {/* ════════════════════════════════════ */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-3">
-              7 Levels of <span className="gradient-text">Brainrot</span>
-            </h2>
-            <p className="text-white/50">Where will you land?</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {BRAINROT_LEVELS.map((level, i) => (
-              <LevelCard key={level.level} level={level} index={i} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════ */}
-      {/*           FEATURES SECTION          */}
-      {/* ════════════════════════════════════ */}
-      <section className="py-16 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-3">
-              Why <span className="gradient-text-pink">BrainrotIQ?</span>
-            </h2>
-            <p className="text-white/50">Not your average quiz app</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((f, i) => (
-              <FeatureCard key={f.title} {...f} delay={i * 100} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════ */}
-      {/*             FAQ SECTION             */}
-      {/* ════════════════════════════════════ */}
-      <section className="py-16 px-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-display font-bold text-white mb-3">
-              Frequently Asked Questions
-            </h2>
-          </div>
-
-          <div className="space-y-4">
+          {/* Stats Row */}
+          <div className="flex items-center justify-center gap-6 mt-6">
             {[
-              {
-                q: "What is the Brainrot IQ Test?",
-                a: "It's an AI-powered quiz that tests your Gen-Z slang and internet culture knowledge to determine your 'brainrot level' — a fun scale from NPC to Final Boss Sigma.",
-              },
-              {
-                q: "How does the AI generate questions?",
-                a: "We use Groq's lightning-fast API to generate unique, personalized questions in real-time. Every test is different!",
-              },
-              {
-                q: "Is it really free?",
-                a: "Yes! 100% free, no account needed, no hidden fees. Just enter your name and play.",
-              },
-              {
-                q: "Can I retake the test?",
-                a: "Absolutely! Take it as many times as you want. Each test generates fresh AI questions.",
-              },
-              {
-                q: "How is the score calculated?",
-                a: "You get points for each correct answer within the 20-second time limit. Final score is out of 100.",
-              },
-            ].map((faq, i) => (
-              <FAQItem key={i} {...faq} />
+              { value: '10', label: 'Questions' },
+              { value: '3', label: 'Difficulties' },
+              { value: '∞', label: 'Unique Quizzes' },
+            ].map(({ value, label }) => (
+              <div key={label} className="text-center">
+                <div className="text-2xl font-black text-white">{value}</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider">{label}</div>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
+        </motion.div>
 
-      {/* ════════════════════════════════════ */}
-      {/*             CTA SECTION             */}
-      {/* ════════════════════════════════════ */}
-      <section className="py-20 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="glass-card p-10 sm:p-16 relative overflow-hidden">
-            {/* BG glow */}
-            <div className="absolute inset-0 opacity-20"
-              style={{ background: "radial-gradient(ellipse at center, #7c3aed, transparent 70%)" }} />
+        {/* Quiz Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="w-full max-w-md"
+        >
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+            
+            {/* Name Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                Your Name
+              </label>
+              {savedName ? (
+                <div className="flex items-center justify-between bg-violet-600/20 border border-violet-500/40 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                      {savedName[0]?.toUpperCase()}
+                    </div>
+                    <span className="text-white font-semibold">{savedName}</span>
+                  </div>
+                  <button
+                    onClick={() => { storage.remove('playerName'); window.location.reload(); }}
+                    className="text-gray-400 hover:text-white text-xs transition-colors"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={handleNameChange}
+                    onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+                    placeholder="Enter your name..."
+                    maxLength={20}
+                    className={`w-full bg-white/5 border ${nameError ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/60 transition-colors`}
+                  />
+                  {nameError && (
+                    <p className="text-red-400 text-xs mt-1">{nameError}</p>
+                  )}
+                </div>
+              )}
+            </div>
 
-            <div className="relative">
-              <div className="text-6xl mb-4 animate-bounce-slow">🧠</div>
-              <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-4">
-                Ready to Find Out?
-              </h2>
-              <p className="text-white/60 mb-8 text-lg">
-                Take the test. Get your level. Flex on your friends.
-              </p>
+            {/* Difficulty Selection */}
+            <div className="mb-8">
+              <label className="block text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Difficulty
+              </label>
+              <div className="space-y-2">
+                {Object.entries(QUIZ_CONFIG.difficulties).map(([key, diff]) => (
+                  <button
+                    key={key}
+                    onClick={() => setDifficulty(key)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                      difficulty === key
+                        ? 'border-violet-500/60 bg-violet-600/20 text-white'
+                        : 'border-white/5 bg-white/3 text-gray-400 hover:border-white/15 hover:text-gray-300'
+                    }`}
+                  >
+                    <span className="text-lg">{diff.label.split(' ')[0]}</span>
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold text-sm">{diff.label.split(' ').slice(1).join(' ')}</div>
+                      <div className="text-xs text-gray-500">{diff.description}</div>
+                    </div>
+                    {difficulty === key && (
+                      <div className="w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Start Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleStart}
+              className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-violet-900/40"
+            >
+              🧠 Start Quiz
+            </motion.button>
+
+            {/* Navigation Links */}
+            <div className="flex justify-center gap-4 mt-4">
               <button
-                onClick={handleStart}
-                className="btn-neon text-xl px-12 py-5 mx-auto inline-flex items-center gap-3"
+                onClick={() => navigate('/leaderboard')}
+                className="text-gray-500 hover:text-gray-300 text-sm transition-colors flex items-center gap-1"
               >
-                Start Now ⚡
+                🏆 Leaderboard
               </button>
+              {savedName && (
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="text-gray-500 hover:text-gray-300 text-sm transition-colors flex items-center gap-1"
+                >
+                  👤 Profile
+                </button>
+              )}
             </div>
           </div>
-        </div>
-      </section>
-    </div>
-  );
-}
+        </motion.div>
 
-function FAQItem({ q, a }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div
-      className="glass-card overflow-hidden cursor-pointer"
-      onClick={() => setOpen((p) => !p)}
-    >
-      <div className="p-4 flex items-center justify-between gap-3">
-        <span className="font-semibold text-white/90 text-sm sm:text-base">{q}</span>
-        <span className={`text-purple-400 transition-transform duration-300 flex-shrink-0 ${open ? "rotate-180" : ""}`}>
-          ▼
-        </span>
+        {/* Feature Pills */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="flex flex-wrap justify-center gap-2 mt-8 px-4"
+        >
+          {[
+            '🤖 AI Questions',
+            '⏱️ 20s Timer',
+            '🏆 Global Leaderboard',
+            '📊 Instant Results',
+            '🔥 Streak Bonuses',
+            '📱 Mobile Friendly',
+          ].map(item => (
+            <span
+              key={item}
+              className="bg-white/5 border border-white/10 text-gray-400 text-xs px-3 py-1 rounded-full"
+            >
+              {item}
+            </span>
+          ))}
+        </motion.div>
+
+        {/* Bottom padding */}
+        <div className="h-16" />
       </div>
-      {open && (
-        <div className="px-4 pb-4 animate-fade-in">
-          <p className="text-white/60 text-sm leading-relaxed border-t border-white/5 pt-3">
-            {a}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
