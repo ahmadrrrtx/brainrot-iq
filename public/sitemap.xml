@@ -1,38 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-  xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
-    http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"
->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- Homepage -->
   <url>
     <loc>https://brainrot-iq.vercel.app/</loc>
-    <lastmod>2025-01-01</lastmod>
-    <changefreq>daily</changefreq>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://brainrot-iq.vercel.app/og-image.png</image:loc>
-      <image:title>Brainrot IQ Test - Gen Z Quiz</image:title>
-      <image:caption>AI-powered Brainrot IQ Test for Gen-Z</image:caption>
+      <image:title>BrainRot IQ - Internet Culture Quiz</image:title>
+      <image:caption>Test your internet culture knowledge with AI-generated questions</image:caption>
     </image:image>
   </url>
+
+  <!-- Quiz Page -->
   <url>
     <loc>https://brainrot-iq.vercel.app/quiz</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2024-01-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
+
+  <!-- Leaderboard -->
   <url>
     <loc>https://brainrot-iq.vercel.app/leaderboard</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2024-01-15</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.8</priority>
   </url>
+
+  <!-- Results -->
   <url>
     <loc>https://brainrot-iq.vercel.app/results</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Profile -->
+  <url>
+    <loc>https://brainrot-iq.vercel.app/profile</loc>
+    <lastmod>2024-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
 </urlset>
