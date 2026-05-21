@@ -1,74 +1,86 @@
-import { useEffect } from "react";
-import { QUIZ_CONFIG } from "../constants";
-import { useSound } from "../hooks/useSound";
+// src/components/Timer.jsx
+import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 
-export default function Timer({ timeLeft, onTimeout }) {
-  const { sounds } = useSound();
-  const total = QUIZ_CONFIG.timePerQuestion;
-  const percentage = (timeLeft / total) * 100;
+export default function Timer({ duration = 20, onComplete, isPaused = false }) {
+  const [timeLeft, setTimeLeft] = useState(duration);
+  const intervalRef = useRef(null);
+  const hasCompleted = useRef(false);
+
+  useEffect(() => {
+    setTimeLeft(duration);
+    hasCompleted.current = false;
+  }, [duration]);
+
+  useEffect(() => {
+    if (isPaused) {
+      clearInterval(intervalRef.current);
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(intervalRef.current);
+          if (!hasCompleted.current) {
+            hasCompleted.current = true;
+            onComplete?.();
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalRef.current);
+  }, [isPaused, onComplete]);
+
+  const percentage = (timeLeft / duration) * 100;
   const circumference = 2 * Math.PI * 20;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  const isWarning = timeLeft <= 5;
-  const isCritical = timeLeft <= 3;
+  const getColor = () => {
+    if (timeLeft > duration * 0.5) return '#7c3aed'; // Purple
+    if (timeLeft > duration * 0.25) return '#f59e0b'; // Yellow
+    return '#ef4444'; // Red
+  };
 
-  // Play warning sounds
-  useEffect(() => {
-    if (timeLeft <= 5 && timeLeft > 0) {
-      sounds.tick();
-    }
-    if (timeLeft === 0) {
-      onTimeout?.();
-    }
-  }, [timeLeft]);
-
-  const color = isCritical
-    ? "#ef4444"
-    : isWarning
-    ? "#f59e0b"
-    : "#7c3aed";
+  const isUrgent = timeLeft <= 5;
 
   return (
-    <div className={`relative flex items-center justify-center ${isCritical ? "animate-wiggle" : ""}`}>
-      {/* SVG Ring */}
-      <svg width="56" height="56" className="-rotate-90">
-        {/* Background ring */}
+    <motion.div
+      animate={isUrgent ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+      transition={isUrgent ? { duration: 0.5, repeat: Infinity } : {}}
+      className="relative flex items-center justify-center w-12 h-12"
+    >
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
+        {/* Background track */}
         <circle
-          cx="28"
-          cy="28"
-          r="20"
+          cx="24" cy="24" r="20"
           fill="none"
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="4"
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth="3"
         />
-        {/* Progress ring */}
-        <circle
-          cx="28"
-          cy="28"
-          r="20"
+        {/* Progress */}
+        <motion.circle
+          cx="24" cy="24" r="20"
           fill="none"
-          stroke={color}
-          strokeWidth="4"
+          stroke={getColor()}
+          strokeWidth="3"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          style={{
-            transition: "stroke-dashoffset 0.9s linear, stroke 0.3s ease",
-            filter: `drop-shadow(0 0 6px ${color})`,
-          }}
+          style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.5s ease' }}
         />
       </svg>
-
-      {/* Time number */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span
-          className={`text-sm font-bold transition-colors duration-300 ${
-            isCritical ? "text-red-400" : isWarning ? "text-amber-400" : "text-white"
-          }`}
-        >
-          {timeLeft}
-        </span>
-      </div>
-    </div>
+      
+      {/* Number */}
+      <span
+        className="absolute text-sm font-black tabular-nums"
+        style={{ color: getColor(), transition: 'color 0.5s ease' }}
+      >
+        {timeLeft}
+      </span>
+    </motion.div>
   );
 }
