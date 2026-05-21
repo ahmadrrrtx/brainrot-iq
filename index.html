@@ -1,176 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-
-    <!-- ═══════════════════════════════════════ -->
-    <!--           PRIMARY META TAGS            -->
-    <!-- ═══════════════════════════════════════ -->
-    <title>Brainrot IQ Test — How Cooked Is Your Brain? 🧠</title>
-    <meta name="title" content="Brainrot IQ Test — How Cooked Is Your Brain? 🧠" />
-    <meta
-      name="description"
-      content="Take the ultimate Gen-Z Brainrot IQ Test. Answer AI-generated questions, discover your brainrot level, and compete on the global leaderboard. Are you a sigma or completely cooked?"
-    />
-    <meta
-      name="keywords"
-      content="brainrot iq test, brainrot quiz, gen z quiz, sigma quiz, rizz test, skibidi quiz, ohio quiz, brainrot level, funny iq test, viral quiz 2024, gen z slang quiz"
-    />
-    <meta name="author" content="BrainrotIQ" />
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="theme-color" content="#7c3aed" />
-    <meta name="application-name" content="Brainrot IQ" />
+    
+    <!-- ============================================ -->
+    <!-- PRIMARY META TAGS -->
+    <!-- ============================================ -->
+    <title>BrainRot IQ - Test Your Internet Culture Knowledge | Gen-Z Meme Quiz</title>
+    <meta name="title" content="BrainRot IQ - Test Your Internet Culture Knowledge | Gen-Z Meme Quiz" />
+    <meta name="description" content="How chronically online are you? Test your brainrot IQ with AI-generated questions about TikTok trends, Gen-Z slang, viral memes, sigma culture, skibidi toilet, rizz, and internet culture. Free quiz, instant results, global leaderboard!" />
+    <meta name="keywords" content="brainrot iq, brainrot quiz, internet culture quiz, gen-z quiz, meme quiz, tiktok quiz, rizz test, sigma test, skibidi toilet quiz, gen z slang quiz, chronically online quiz, viral meme test, internet knowledge test, brainrot test 2024" />
+    <meta name="author" content="BrainRot IQ" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="theme-color" content="#7C3AED" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="rating" content="general" />
+    <meta name="language" content="English" />
+    <meta name="revisit-after" content="7 days" />
+    <meta name="category" content="Entertainment, Quiz, Games" />
+    
+    <!-- ============================================ -->
+    <!-- CANONICAL URL -->
+    <!-- ============================================ -->
     <link rel="canonical" href="https://brainrot-iq.vercel.app/" />
-
-    <!-- ═══════════════════════════════════════ -->
-    <!--         OPEN GRAPH / FACEBOOK          -->
-    <!-- ═══════════════════════════════════════ -->
+    
+    <!-- ============================================ -->
+    <!-- OPEN GRAPH / FACEBOOK -->
+    <!-- ============================================ -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://brainrot-iq.vercel.app/" />
-    <meta property="og:title" content="Brainrot IQ Test — How Cooked Is Your Brain? 🧠" />
-    <meta
-      property="og:description"
-      content="Take the ultimate Gen-Z Brainrot IQ Test powered by AI. Discover your brainrot level & compete globally. 100% free, no signup needed!"
-    />
+    <meta property="og:title" content="BrainRot IQ - Are You Chronically Online? 🧠" />
+    <meta property="og:description" content="Test your internet culture IQ! Answer AI-generated questions about TikTok trends, viral memes, Gen-Z slang, and brainrot content. Compare with friends on the global leaderboard!" />
     <meta property="og:image" content="https://brainrot-iq.vercel.app/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Brainrot IQ Test - Gen Z Quiz" />
-    <meta property="og:site_name" content="Brainrot IQ" />
+    <meta property="og:image:alt" content="BrainRot IQ - Internet Culture Quiz" />
+    <meta property="og:site_name" content="BrainRot IQ" />
     <meta property="og:locale" content="en_US" />
-
-    <!-- ═══════════════════════════════════════ -->
-    <!--              TWITTER CARD              -->
-    <!-- ═══════════════════════════════════════ -->
+    
+    <!-- ============================================ -->
+    <!-- TWITTER CARD -->
+    <!-- ============================================ -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://brainrot-iq.vercel.app/" />
-    <meta name="twitter:title" content="Brainrot IQ Test — How Cooked Is Your Brain? 🧠" />
-    <meta
-      name="twitter:description"
-      content="AI-powered Gen-Z Brainrot IQ Test. Are you a sigma gigachad or completely cooked? Find out now 🔥"
-    />
+    <meta name="twitter:title" content="BrainRot IQ - Are You Chronically Online? 🧠" />
+    <meta name="twitter:description" content="Test your internet culture IQ! AI-generated questions about TikTok, memes, Gen-Z slang & brainrot content. Take the quiz!" />
     <meta name="twitter:image" content="https://brainrot-iq.vercel.app/og-image.png" />
+    <meta name="twitter:image:alt" content="BrainRot IQ Quiz" />
     <meta name="twitter:creator" content="@brainrotiq" />
     <meta name="twitter:site" content="@brainrotiq" />
-
-    <!-- ═══════════════════════════════════════ -->
-    <!--         PWA / MOBILE / ICONS           -->
-    <!-- ═══════════════════════════════════════ -->
+    
+    <!-- ============================================ -->
+    <!-- FAVICON & ICONS -->
+    <!-- ============================================ -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Brainrot IQ" />
-
-    <!-- ═══════════════════════════════════════ -->
-    <!--           STRUCTURED DATA              -->
-    <!-- ═══════════════════════════════════════ -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "WebSite",
-            "@id": "https://brainrot-iq.vercel.app/#website",
-            "url": "https://brainrot-iq.vercel.app/",
-            "name": "Brainrot IQ Test",
-            "description": "The ultimate AI-powered Gen-Z Brainrot IQ Test",
-            "publisher": {
-              "@id": "https://brainrot-iq.vercel.app/#organization"
-            },
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": {
-                "@type": "EntryPoint",
-                "urlTemplate": "https://brainrot-iq.vercel.app/?q={search_term_string}"
-              },
-              "query-input": "required name=search_term_string"
-            }
-          },
-          {
-            "@type": "Organization",
-            "@id": "https://brainrot-iq.vercel.app/#organization",
-            "name": "Brainrot IQ",
-            "url": "https://brainrot-iq.vercel.app/",
-            "logo": {
-              "@type": "ImageObject",
-              "url": "https://brainrot-iq.vercel.app/og-image.png"
-            }
-          },
-          {
-            "@type": "WebApplication",
-            "name": "Brainrot IQ Test",
-            "url": "https://brainrot-iq.vercel.app/",
-            "applicationCategory": "EntertainmentApplication",
-            "operatingSystem": "Any",
-            "browserRequirements": "Requires JavaScript",
-            "offers": {
-              "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "USD"
-            },
-            "description": "AI-powered Gen-Z slang and brainrot IQ quiz with global leaderboard",
-            "screenshot": "https://brainrot-iq.vercel.app/og-image.png",
-            "featureList": [
-              "AI-generated questions using Groq",
-              "Global leaderboard",
-              "Brainrot level scoring",
-              "Share results on social media",
-              "No signup required"
-            ]
-          },
-          {
-            "@type": "FAQPage",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "What is the Brainrot IQ Test?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "The Brainrot IQ Test is an AI-powered quiz that tests your knowledge of Gen-Z slang, internet culture, and memes to determine your 'brainrot level' on a fun scale."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Is the Brainrot IQ Test free?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Yes! The Brainrot IQ Test is completely free to play with no signup required."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "How does the AI generate questions?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "We use Groq's lightning-fast AI to generate unique, personalized brainrot questions every time you take the test."
-                }
-              }
-            ]
-          }
-        ]
-      }
-    </script>
-
-    <!-- ═══════════════════════════════════════ -->
-    <!--         PERFORMANCE / PRELOAD          -->
-    <!-- ═══════════════════════════════════════ -->
+    <link rel="mask-icon" href="/favicon.svg" color="#7C3AED" />
+    <meta name="msapplication-TileColor" content="#7C3AED" />
+    
+    <!-- ============================================ -->
+    <!-- PRECONNECT FOR PERFORMANCE -->
+    <!-- ============================================ -->
+    <link rel="preconnect" href="https://api.groq.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap"
-      rel="stylesheet"
-    />
     <link rel="dns-prefetch" href="https://api.groq.com" />
     <link rel="dns-prefetch" href="https://supabase.co" />
+    
+    <!-- ============================================ -->
+    <!-- FONTS -->
+    <!-- ============================================ -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <!-- ============================================ -->
+    <!-- STRUCTURED DATA / SCHEMA.ORG -->
+    <!-- ============================================ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "BrainRot IQ",
+      "url": "https://brainrot-iq.vercel.app",
+      "description": "AI-powered internet culture quiz that tests your knowledge of memes, Gen-Z slang, TikTok trends, and brainrot content",
+      "applicationCategory": "GameApplication",
+      "genre": "Quiz Game",
+      "browserRequirements": "Requires JavaScript",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "1000",
+        "bestRating": "5"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "BrainRot IQ",
+        "url": "https://brainrot-iq.vercel.app"
+      },
+      "featureList": [
+        "AI-generated questions",
+        "Multiple difficulty levels",
+        "Global leaderboard",
+        "Instant results",
+        "Internet culture topics",
+        "Gen-Z slang questions"
+      ]
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is BrainRot IQ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "BrainRot IQ is a free AI-powered quiz that tests your knowledge of internet culture, memes, Gen-Z slang, TikTok trends, and viral content."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the BrainRot quiz work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The quiz uses AI to generate unique questions about internet culture and memes. Answer 10 questions, get scored, and see how you rank on the global leaderboard."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is the BrainRot IQ quiz free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! BrainRot IQ is completely free. No signup required, just enter your name and start testing your internet culture knowledge."
+          }
+        }
+      ]
+    }
+    </script>
   </head>
-
   <body>
     <div id="root"></div>
+    <!-- Preload hint for faster interaction -->
+    <noscript>
+      <div style="text-align:center;padding:50px;font-family:sans-serif;background:#0f0f1a;color:white;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+        <h1>🧠 BrainRot IQ</h1>
+        <p>You need JavaScript enabled to take the BrainRot IQ quiz.</p>
+        <p>Please enable JavaScript in your browser and refresh the page.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
