@@ -1,113 +1,213 @@
-import { useState, useCallback, useRef } from "react";
-import { QUIZ_CONFIG } from "../constants";
+// src/hooks/useQuiz.js
+import { useState, useCallback, useRef } from 'react';
+import { APP_CONFIG, QUIZ_CONFIG } from '../constants';
+import { calculateScore } from '../utils';
+import { db } from '../supabase';
 
-export const useQuiz = () => {
-  const [questions, setQuestions] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState([]);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isAnswered, setIsAnswered] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(QUIZ_CONFIG.timePerQuestion);
-  const [totalTime, setTotalTime] = useState(0);
-  const timerRef = useRef(null);
+const INITIAL_STATE = {
+  status: 'idle', // idle | loading | active | finished | error
+  questions: [],
+  currentIndex: 0,
+  answers: {},
+  timeData: {},
+  results: null,
+  error: null,
+  difficulty: 'medium',
+  playerName: '',
+  streak: 0,
+  maxStreak: 0,
+};
+
+export function useQuiz() {
+  const [state, setState] = useState(INITIAL_STATE);
   const startTimeRef = useRef(null);
+  const questionStartTimeRef = useRef(null);
 
-  const startTimer = useCallback((onTimeout) => {
-    clearInterval(timerRef.current);
-    setTimeLeft(QUIZ_CONFIG.timePerQuestion);
-    startTimeRef.current = Date.now();
-
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          onTimeout?.();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const setPartialState = useCallback((updates) => {
+    setState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  const stopTimer = useCallback(() => {
-    clearInterval(timerRef.current);
-    const elapsed = Math.round((Date.now() - (startTimeRef.current || Date.now())) / 1000);
-    setTotalTime((prev) => prev + elapsed);
-  }, []);
+  // Generate questions via serverless API
+  const generateQuestions = useCallback(async (difficulty = 'medium', playerName = '') => {
+    setPartialState({ 
+      status: 'loading', 
+      error: null, 
+      difficulty, 
+      playerName,
+      questions: [],
+      answers: {},
+      timeData: {},
+      currentIndex: 0,
+      results: null,
+      streak: 0,
+      maxStreak: 0,
+    });
 
-  const submitAnswer = useCallback(
-    (answerIndex) => {
-      if (isAnswered) return;
-      stopTimer();
-      setSelectedAnswer(answerIndex);
-      setIsAnswered(true);
-
-      const currentQ = questions[currentIndex];
-      const isCorrect = answerIndex === currentQ?.correctAnswer;
-
-      setAnswers((prev) => [
-        ...prev,
-        {
-          questionIndex: currentIndex,
-          selectedAnswer: answerIndex,
-          correctAnswer: currentQ?.correctAnswer,
-          isCorrect,
-          timeSpent: QUIZ_CONFIG.timePerQuestion - timeLeft,
+    try {
+      const response = await fetch(`${APP_CONFIG.apiBase}/generate-questions`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
         },
-      ]);
-    },
-    [isAnswered, questions, currentIndex, stopTimer, timeLeft]
-  );
+        body: JSON.stringify({ 
+          difficulty, 
+          count: QUIZ_CONFIG.totalQuestions 
+        }),
+      });
 
-  const nextQuestion = useCallback(() => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-      setSelectedAnswer(null);
-      setIsAnswered(false);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+        throw new Error('No questions received from API');
+      }
+
+      startTimeRef.current = Date.now();
+      questionStartTimeRef.current = Date.now();
+
+      setPartialState({ 
+        status: 'active', 
+        questions: data.questions,
+        currentIndex: 0,
+      });
+
+      return { success: true, fallback: data.fallback || false };
+    } catch (error) {
+      console.error('Failed to generate questions:', error);
+      setPartialState({ 
+        status: 'error', 
+        error: error.message || 'Failed to generate questions. Please try again.' 
+      });
+      return { success: false, error: error.message };
     }
-  }, [currentIndex, questions.length]);
+  }, [setPartialState]);
 
-  const reset = useCallback(() => {
-    clearInterval(timerRef.current);
-    setQuestions([]);
-    setCurrentIndex(0);
-    setAnswers([]);
-    setSelectedAnswer(null);
-    setIsAnswered(false);
-    setIsLoading(false);
-    setError(null);
-    setTimeLeft(QUIZ_CONFIG.timePerQuestion);
-    setTotalTime(0);
+  // Answer a question
+  const answerQuestion = useCallback((answer) => {
+    setState(prev => {
+      if (prev.status !== 'active') return prev;
+      
+      const timeTaken = questionStartTimeRef.current 
+        ? Math.round((Date.now() - questionStartTimeRef.current) / 1000)
+        : QUIZ_CONFIG.timePerQuestion;
+      
+      const currentQuestion = prev.questions[prev.currentIndex];
+      const isCorrect = answer === currentQuestion?.answer;
+      const newStreak = isCorrect ? prev.streak + 1 : 0;
+      const newMaxStreak = Math.max(prev.maxStreak, newStreak);
+      
+      const newAnswers = { ...prev.answers, [prev.currentIndex]: answer };
+      const newTimeData = { ...prev.timeData, [prev.currentIndex]: timeTaken };
+      
+      const isLastQuestion = prev.currentIndex >= prev.questions.length - 1;
+      
+      if (isLastQuestion) {
+        // Calculate final results
+        const scoreData = calculateScore(
+          Object.values(newAnswers),
+          prev.questions,
+          newTimeData,
+          prev.difficulty
+        );
+        
+        const totalTimeTaken = startTimeRef.current 
+          ? Math.round((Date.now() - startTimeRef.current) / 1000)
+          : 0;
+        
+        const finalResults = {
+          ...scoreData,
+          playerName: prev.playerName,
+          difficulty: prev.difficulty,
+          totalTimeTaken,
+          maxStreak: newMaxStreak,
+          completedAt: new Date().toISOString(),
+        };
+        
+        // Submit to leaderboard (async, don't block)
+        if (prev.playerName && db) {
+          db.submitScore({
+            name: prev.playerName,
+            score: scoreData.correctCount,
+            total: prev.questions.length,
+            difficulty: prev.difficulty,
+            timeTaken: totalTimeTaken,
+            tier: `${scoreData.percentage}%`,
+          }).catch(console.error);
+        }
+        
+        return {
+          ...prev,
+          answers: newAnswers,
+          timeData: newTimeData,
+          status: 'finished',
+          results: finalResults,
+          streak: newStreak,
+          maxStreak: newMaxStreak,
+        };
+      }
+      
+      // Move to next question
+      questionStartTimeRef.current = Date.now();
+      
+      return {
+        ...prev,
+        answers: newAnswers,
+        timeData: newTimeData,
+        currentIndex: prev.currentIndex + 1,
+        streak: newStreak,
+        maxStreak: newMaxStreak,
+      };
+    });
   }, []);
 
-  const score = answers.filter((a) => a.isCorrect).length;
-  const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
-  const isComplete = questions.length > 0 && currentIndex >= questions.length - 1 && isAnswered;
+  // Time out (no answer given)
+  const timeOut = useCallback(() => {
+    answerQuestion(null);
+  }, [answerQuestion]);
+
+  // Reset quiz
+  const resetQuiz = useCallback(() => {
+    setState(INITIAL_STATE);
+    startTimeRef.current = null;
+    questionStartTimeRef.current = null;
+  }, []);
+
+  // Computed values
+  const currentQuestion = state.questions[state.currentIndex] || null;
+  const progress = state.questions.length > 0 
+    ? ((state.currentIndex) / state.questions.length) * 100 
+    : 0;
 
   return {
-    questions,
-    setQuestions,
-    currentIndex,
-    answers,
-    selectedAnswer,
-    isAnswered,
-    isLoading,
-    setIsLoading,
-    error,
-    setError,
-    timeLeft,
-    totalTime,
-    score,
-    percentage,
-    isComplete,
-    startTimer,
-    stopTimer,
-    submitAnswer,
-    nextQuestion,
-    reset,
-    currentQuestion: questions[currentIndex] || null,
-    progress: questions.length > 0 ? ((currentIndex + (isAnswered ? 1 : 0)) / questions.length) * 100 : 0,
+    // State
+    status: state.status,
+    questions: state.questions,
+    currentQuestion,
+    currentIndex: state.currentIndex,
+    answers: state.answers,
+    results: state.results,
+    error: state.error,
+    difficulty: state.difficulty,
+    playerName: state.playerName,
+    streak: state.streak,
+    maxStreak: state.maxStreak,
+    progress,
+    
+    // Actions
+    generateQuestions,
+    answerQuestion,
+    timeOut,
+    resetQuiz,
+    
+    // Computed
+    isLoading: state.status === 'loading',
+    isActive: state.status === 'active',
+    isFinished: state.status === 'finished',
+    isError: state.status === 'error',
+    isIdle: state.status === 'idle',
+    totalQuestions: state.questions.length,
   };
-};
+}
