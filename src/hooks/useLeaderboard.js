@@ -1,68 +1,82 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../supabase";
-import { LEADERBOARD_CONFIG } from "../constants";
+// src/hooks/useLeaderboard.js
+import { useState, useEffect, useCallback } from 'react';
+import { db } from '../supabase';
 
-export const useLeaderboard = (autoFetch = true) => {
-  const [entries, setEntries] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+export function useLeaderboard(autoFetch = true) {
+  const [data, setData] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [filter, setFilter] = useState('all'); // all | easy | medium | hard
 
-  const fetchLeaderboard = useCallback(async () => {
-    setIsLoading(true);
+  const fetchLeaderboard = useCallback(async (difficulty = null) => {
+    setLoading(true);
     setError(null);
+    
     try {
-      const { data, error: err } = await supabase
-        .from("scores")
-        .select("*")
-        .order("score", { ascending: false })
-        .limit(LEADERBOARD_CONFIG.limit);
-
-      if (err) throw err;
-      setEntries(data || []);
+      const { data: scores, error: fetchError } = await db.getLeaderboard({ 
+        limit: 100,
+        difficulty: difficulty === 'all' ? null : difficulty,
+      });
+      
+      if (fetchError) {
+        throw new Error(fetchError);
+      }
+      
+      setData(scores || []);
       setLastUpdated(new Date());
-    } catch (e) {
-      setError("Failed to load leaderboard. Check your connection.");
+    } catch (err) {
+      setError(err.message || 'Failed to load leaderboard');
+      setData([]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, []);
 
-  const submitScore = useCallback(async ({ name, score, level, emoji }) => {
+  const fetchStats = useCallback(async () => {
     try {
-      const { error: err } = await supabase.from("scores").insert([
-        {
-          name: name.trim().slice(0, 20),
-          score,
-          level,
-          emoji,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-      if (err) throw err;
-      await fetchLeaderboard();
-      return true;
-    } catch (e) {
-      console.error("Score submit error:", e);
-      return false;
+      const { data: statsData } = await db.getStats();
+      if (statsData) setStats(statsData);
+    } catch (err) {
+      console.error('Failed to fetch stats:', err);
     }
+  }, []);
+
+  const refresh = useCallback(() => {
+    fetchLeaderboard(filter === 'all' ? null : filter);
+    fetchStats();
+  }, [fetchLeaderboard, fetchStats, filter]);
+
+  const changeFilter = useCallback((newFilter) => {
+    setFilter(newFilter);
+    fetchLeaderboard(newFilter === 'all' ? null : newFilter);
   }, [fetchLeaderboard]);
 
   useEffect(() => {
-    if (!autoFetch) return;
-    fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, LEADERBOARD_CONFIG.refreshInterval);
-    return () => clearInterval(interval);
-  }, [autoFetch, fetchLeaderboard]);
+    if (autoFetch) {
+      fetchLeaderboard();
+      fetchStats();
+    }
+  }, [autoFetch, fetchLeaderboard, fetchStats]);
+
+  // Get rank of a specific player
+  const getPlayerRank = useCallback((playerName) => {
+    const index = data.findIndex(entry => entry.name === playerName);
+    return index === -1 ? null : index + 1;
+  }, [data]);
 
   return {
-    entries,
-    isLoading,
+    data,
+    stats,
+    loading,
     error,
     lastUpdated,
+    filter,
     fetchLeaderboard,
-    submitScore,
-    topThree: entries.slice(0, 3),
-    userRank: null,
+    refresh,
+    changeFilter,
+    getPlayerRank,
+    isEmpty: !loading && data.length === 0,
   };
-};
+}
