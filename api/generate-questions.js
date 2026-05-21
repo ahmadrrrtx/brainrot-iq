@@ -1,17 +1,12 @@
 // api/generate-questions.js
-import Groq from 'groq-sdk';
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY, // Server-side only - no VITE_ prefix
-});
+// Uses fetch directly - no groq-sdk needed, avoids dependency issues
 
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', 'https://brainrot-iq.vercel.app');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(200).end();
   }
 
@@ -19,205 +14,259 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
+  if (!GROQ_API_KEY) {
+    console.error('GROQ_API_KEY not set in environment');
+    // Return fallback questions instead of erroring
+    return res.status(200).json({
+      questions: getFallbackQuestions(10),
+      fallback: true,
+      reason: 'API key not configured'
+    });
+  }
+
   const { difficulty = 'medium', count = 10 } = req.body || {};
 
-  const prompt = `You are the ultimate Gen-Z/Alpha internet culture expert and quiz master. Generate ${count} multiple choice questions about current internet culture, memes, viral trends, brainrot content, and social media phenomena.
+  const difficultyDescriptions = {
+    easy: 'very mainstream viral content that any social media user would know',
+    medium: 'content you need to be chronically online to know - TikTok heavy users, meme culture',
+    hard: 'deep cut internet culture only true brainrot masters would know - very niche viral moments'
+  };
 
-TOPIC CATEGORIES (mix all of these):
-- TikTok trends, sounds, dances, and viral creators (2023-2024)
-- YouTube memes, shorts trends, and viral moments  
-- Twitter/X viral moments and trending topics
-- Instagram reels trends
-- Twitch/gaming culture memes (Kai Cenat, xQc, etc.)
-- Gen-Z/Alpha slang (rizz, gyatt, slay, no cap, bussin, understood the assignment, etc.)
-- Viral phrases ("skibidi", "sigma", "based", "NPC", "main character energy")
-- Popular meme formats (wojak, chad, npc, liminal spaces, etc.)
+  const systemPrompt = `You are a brainrot quiz master who creates JSON quiz questions about internet culture. You ONLY respond with valid JSON. Never add markdown, never add text outside the JSON array.`;
+
+  const userPrompt = `Create exactly ${count} multiple choice quiz questions about internet culture, memes, and viral content.
+
+Difficulty: ${difficulty} - ${difficultyDescriptions[difficulty] || difficultyDescriptions.medium}
+
+Topics to cover (mix them):
+- TikTok trends, viral dances, sounds (2022-2024)
+- Gen-Z and Gen-Alpha slang (rizz, gyatt, skibidi, sigma, based, NPC, slay, bussin, no cap, understood the assignment, main character, touch grass, ratio, mid, W, L, rent free, ate, left no crumbs, it's giving, lowkey, highkey, periodt)
+- Viral meme formats and characters (wojak, chad, NPC TikTok trend, Grimace shake, etc.)
+- YouTube and Twitch culture (Kai Cenat, xQc, MrBeast, Skibidi Toilet by DaFuq!?Boom!)
+- Twitter/X viral moments
+- Viral songs used in memes (STAY, Cupid, Running Up That Hill, etc.)
+- Gaming meme culture (Among Us, Minecraft, Fortnite memes)
 - Anime that became mainstream meme culture
-- Internet beef and drama moments
-- Viral songs and audio clips from social media
-- Speedrunning and gaming culture
-- SoundCloud/hyperpop music culture
-- Dark humor and absurdist meme formats
 
-DIFFICULTY: ${difficulty}
-- easy: Very mainstream, everyone who uses social media knows it
-- medium: You need to be chronically online to know this
-- hard: Only true brainrot masters would know this
+Rules:
+1. Questions must be fun and use internet language naturally
+2. Wrong answers must be believable but clearly wrong to those who know
+3. Shuffle options so correct answer is not always first
+4. Keep explanations short and funny (max 15 words)
+5. Only return the JSON array, nothing else
 
-RULES:
-1. Make questions genuinely fun and funny
-2. Use internet language naturally in questions
-3. Wrong answers should be plausible but clearly wrong to those who know
-4. Include specific years/events when relevant
-5. Make it feel like a quiz between friends who are chronically online
-
-Return ONLY a valid JSON array with exactly ${count} objects:
-[
-  {
-    "question": "question text here",
-    "options": ["correct answer", "wrong answer 2", "wrong answer 3", "wrong answer 4"],
-    "answer": "correct answer",
-    "explanation": "brief funny explanation why this is correct",
-    "category": "category name",
-    "emoji": "relevant emoji"
-  }
-]
-
-IMPORTANT: Shuffle the options so correct answer isn't always first. Return ONLY the JSON array, no other text.`;
+Return ONLY this JSON structure (array of ${count} objects):
+[{"question":"string","options":["string","string","string","string"],"answer":"string","explanation":"string","category":"string","emoji":"string"}]`;
 
   try {
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a brainrot quiz master. You only respond with valid JSON arrays. Never add markdown formatting, never add text before or after the JSON.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.9,
-      max_tokens: 4000,
-      response_format: { type: 'json_object' },
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.85,
+        max_tokens: 3500,
+        top_p: 0.9,
+        stream: false,
+      }),
     });
 
-    let responseText = completion.choices[0]?.message?.content || '[]';
-    
-    // Parse the response
-    let parsed;
-    try {
-      parsed = JSON.parse(responseText);
-      // Handle if it returns {questions: [...]} format
-      if (parsed.questions) parsed = parsed.questions;
-      if (!Array.isArray(parsed)) parsed = Object.values(parsed)[0];
-    } catch {
-      // Try to extract JSON array from response
-      const match = responseText.match(/\[[\s\S]*\]/);
-      if (match) {
-        parsed = JSON.parse(match[0]);
-      } else {
-        throw new Error('Invalid JSON response from AI');
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Groq API error:', response.status, errorText);
+      throw new Error(`Groq API returned ${response.status}`);
     }
 
-    // Validate structure
-    const validated = parsed.slice(0, count).map((q, i) => ({
-      id: i + 1,
-      question: q.question || 'Question unavailable',
-      options: Array.isArray(q.options) ? q.options : ['A', 'B', 'C', 'D'],
-      answer: q.answer || q.options?.[0] || 'A',
-      explanation: q.explanation || 'No explanation available',
-      category: q.category || 'Internet Culture',
-      emoji: q.emoji || '🧠',
-    }));
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
 
-    return res.status(200).json({ questions: validated });
+    if (!content) {
+      throw new Error('Empty response from Groq');
+    }
+
+    // Parse JSON from response
+    let questions = parseQuestionsFromResponse(content, count);
+
+    if (!questions || questions.length === 0) {
+      throw new Error('Failed to parse questions');
+    }
+
+    return res.status(200).json({ questions, fallback: false });
+
   } catch (error) {
-    console.error('Groq API Error:', error);
-    
-    // Fallback questions if AI fails
-    const fallbackQuestions = getFallbackQuestions(count);
-    return res.status(200).json({ 
-      questions: fallbackQuestions,
-      fallback: true 
+    console.error('Question generation failed:', error.message);
+    // Always return fallback questions so app never breaks
+    return res.status(200).json({
+      questions: getFallbackQuestions(count),
+      fallback: true,
+      reason: error.message
     });
   }
 }
 
+function parseQuestionsFromResponse(content, count) {
+  try {
+    // Try direct parse first
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) {
+      return validateAndCleanQuestions(parsed, count);
+    }
+    // If object with questions key
+    if (parsed.questions && Array.isArray(parsed.questions)) {
+      return validateAndCleanQuestions(parsed.questions, count);
+    }
+  } catch {
+    // Try to extract array from content
+    const arrayMatch = content.match(/\[[\s\S]*?\]/);
+    if (arrayMatch) {
+      try {
+        const parsed = JSON.parse(arrayMatch[0]);
+        if (Array.isArray(parsed)) {
+          return validateAndCleanQuestions(parsed, count);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return null;
+}
+
+function validateAndCleanQuestions(questions, count) {
+  return questions
+    .filter(q => q && q.question && Array.isArray(q.options) && q.options.length >= 2 && q.answer)
+    .slice(0, count)
+    .map((q, i) => ({
+      id: i + 1,
+      question: String(q.question).trim(),
+      options: q.options.map(o => String(o).trim()).slice(0, 4),
+      answer: String(q.answer).trim(),
+      explanation: String(q.explanation || 'Internet culture is deep fr').trim(),
+      category: String(q.category || 'Internet Culture').trim(),
+      emoji: String(q.emoji || '🧠').trim(),
+    }));
+}
+
 function getFallbackQuestions(count) {
-  const questions = [
+  const allQuestions = [
     {
       id: 1,
-      question: "What does 'rizz' mean in Gen-Z slang? 🎯",
-      options: ["Natural charm and charisma", "Being angry", "Feeling tired", "A type of food"],
+      question: "What does 'rizz' mean in Gen-Z slang? ✨",
+      options: ["Natural charm and charisma", "Being angry or upset", "Feeling very tired", "A type of hairstyle"],
       answer: "Natural charm and charisma",
-      explanation: "Rizz = W rizz = charisma. Popularized by Kai Cenat!",
+      explanation: "Rizz = charisma. W rizz = great charm!",
       category: "Gen-Z Slang",
       emoji: "✨"
     },
     {
       id: 2,
-      question: "Which phrase became synonymous with sigma male culture? 🐺",
-      options: ["Sigma grindset", "Alpha mode", "Beta blocked", "Delta force"],
-      answer: "Sigma grindset",
-      explanation: "The sigma grindset meme took over the internet in 2021-2022",
-      category: "Meme Culture",
-      emoji: "😤"
-    },
-    {
-      id: 3,
-      question: "What is 'NPC behavior' referring to online? 🤖",
-      options: ["Acting like a background character with no original thoughts", "Playing video games", "Being very smart", "Going viral on TikTok"],
-      answer: "Acting like a background character with no original thoughts",
-      explanation: "NPC = Non-Player Character from video games, applied to people who follow trends mindlessly",
-      category: "Internet Slang",
-      emoji: "🤖"
-    },
-    {
-      id: 4,
-      question: "What does 'no cap' mean? 🧢",
-      options: ["For real, not lying", "Remove your hat", "No internet connection", "Starting a fight"],
-      answer: "For real, not lying",
-      explanation: "Cap = lie, so No Cap = no lie = for real fr fr",
-      category: "Gen-Z Slang",
-      emoji: "🧢"
-    },
-    {
-      id: 5,
-      question: "Skibidi Toilet originated from which platform? 🚽",
-      options: ["YouTube", "TikTok", "Instagram", "Twitter"],
-      answer: "YouTube",
-      explanation: "DaFuq!?Boom! created Skibidi Toilet on YouTube and it became Gen Alpha's defining content",
+      question: "Skibidi Toilet was created by which YouTube channel? 🚽",
+      options: ["DaFuq!?Boom!", "MrBeast", "PewDiePie", "Markiplier"],
+      answer: "DaFuq!?Boom!",
+      explanation: "DaFuq!?Boom! made it on YouTube - Gen Alpha's show!",
       category: "Viral Content",
       emoji: "🚽"
     },
     {
-      id: 6,
-      question: "What is 'understood the assignment' referring to? 📝",
-      options: ["Someone did something perfectly or exceeded expectations", "Completing homework", "Understanding a meme", "Being in school"],
-      answer: "Someone did something perfectly or exceeded expectations",
-      explanation: "Popularized by Tay Money's song, means someone absolutely nailed it",
+      id: 3,
+      question: "What does 'no cap' mean? 🧢",
+      options: ["For real, not lying", "Remove your hat", "No internet signal", "Starting an argument"],
+      answer: "For real, not lying",
+      explanation: "Cap = lie. No cap = no lie = fr fr!",
+      category: "Gen-Z Slang",
+      emoji: "🧢"
+    },
+    {
+      id: 4,
+      question: "What is 'NPC behavior' on the internet? 🤖",
+      options: ["Acting without original thought like a game character", "Playing video games all day", "Being very intelligent", "Going viral on TikTok"],
+      answer: "Acting without original thought like a game character",
+      explanation: "NPC = Non-Player Character - mindless follower!",
+      category: "Internet Culture",
+      emoji: "🤖"
+    },
+    {
+      id: 5,
+      question: "What does 'understood the assignment' mean? 📝",
+      options: ["Someone absolutely nailed what was expected", "Finishing homework early", "Understanding a complex meme", "Being teacher's pet"],
+      answer: "Someone absolutely nailed what was expected",
+      explanation: "They ate! Left no crumbs. Did it perfectly!",
       category: "Gen-Z Slang",
       emoji: "💅"
     },
     {
-      id: 7,
-      question: "What does 'based' mean in internet culture? 🏆",
-      options: ["Being confidently yourself despite what others think", "Living in a basement", "Having a good foundation", "Playing bass guitar"],
-      answer: "Being confidently yourself despite what others think",
-      explanation: "Based originated from Lil B 'the BasedGod' and evolved to mean authentic self-expression",
+      id: 6,
+      question: "What does 'based' mean in internet culture? 😎",
+      options: ["Confidently yourself despite others' opinions", "Living in a basement", "Having a solid foundation", "Playing bass guitar"],
+      answer: "Confidently yourself despite others' opinions",
+      explanation: "Based = authentic self-expression. From Lil B!",
       category: "Internet Culture",
       emoji: "😎"
     },
     {
+      id: 7,
+      question: "What does 'touch grass' tell someone to do? 🌿",
+      options: ["Go outside and experience real life", "Start a garden hobby", "Play Minecraft survival", "Do more exercise"],
+      answer: "Go outside and experience real life",
+      explanation: "You're too online! Go touch actual grass outside!",
+      category: "Internet Slang",
+      emoji: "🌿"
+    },
+    {
       id: 8,
       question: "What is a 'W' in internet slang? 🏆",
-      options: ["A win or victory", "Weird behavior", "Wrong answer", "White flag"],
+      options: ["A win or victory", "Something weird", "A wrong answer", "Waving goodbye"],
       answer: "A win or victory",
-      explanation: "W = Win, L = Loss. Taking an L or getting a W are standard internet vocabulary now",
+      explanation: "W = Win, L = Loss. Simple math fr!",
       category: "Internet Slang",
       emoji: "🏆"
     },
     {
       id: 9,
-      question: "What does 'main character energy' mean? ✨",
-      options: ["Acting like you're the protagonist of life", "Being the main character in a video game", "Having lots of energy", "Being very popular"],
+      question: "What does 'it's giving...' mean on TikTok? ✨",
+      options: ["Something has a certain vibe or energy", "Donating to charity", "A cooking tutorial intro", "Feeling generous today"],
+      answer: "Something has a certain vibe or energy",
+      explanation: "It's giving main character! It's giving villain era!",
+      category: "TikTok Culture",
+      emoji: "✨"
+    },
+    {
+      id: 10,
+      question: "What is 'main character energy'? 🌟",
+      options: ["Acting like you're the protagonist of life", "Having lots of physical energy", "Being main in a video game", "Leading a friend group"],
       answer: "Acting like you're the protagonist of life",
-      explanation: "Main character energy = living life like you're in a movie/show as the protagonist",
+      explanation: "Living like you're in a movie. Delulu but make it cute!",
       category: "TikTok Culture",
       emoji: "🌟"
     },
     {
-      id: 10,
-      question: "What is 'touch grass' telling someone to do? 🌿",
-      options: ["Go outside and experience real life", "Play Minecraft", "Start a garden", "Exercise more"],
-      answer: "Go outside and experience real life",
-      explanation: "Touch grass = you're too online, go outside and touch actual grass (real life)",
-      category: "Internet Culture",
-      emoji: "🌿"
+      id: 11,
+      question: "What does 'sigma male' mean in meme culture? 🐺",
+      options: ["A lone wolf who doesn't follow social hierarchies", "The leader of a friend group", "Someone who works out", "A very smart person"],
+      answer: "A lone wolf who doesn't follow social hierarchies",
+      explanation: "Sigma = lone wolf. Above alpha in the meme hierarchy!",
+      category: "Meme Culture",
+      emoji: "🐺"
+    },
+    {
+      id: 12,
+      question: "What does 'delulu' mean in Gen-Z slang? 💭",
+      options: ["Delusional, living in your own fantasy", "Very dull or boring", "Delicious food", "Dedicated to a goal"],
+      answer: "Delusional, living in your own fantasy",
+      explanation: "Delulu = delusional. 'Delulu is the solulu' is the saying!",
+      category: "Gen-Z Slang",
+      emoji: "💭"
     },
   ];
-  return questions.slice(0, count);
+
+  return allQuestions.slice(0, Math.min(count, allQuestions.length));
 }
