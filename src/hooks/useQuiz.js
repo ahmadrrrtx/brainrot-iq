@@ -1,11 +1,13 @@
 // src/hooks/useQuiz.js
 import { useState, useCallback, useRef } from 'react';
-import { APP_CONFIG, QUIZ_CONFIG } from '../constants';
+import { QUIZ_CONFIG } from '../constants';
 import { calculateScore } from '../utils';
 import { db } from '../supabase';
 
+const API_BASE = '/api';
+
 const INITIAL_STATE = {
-  status: 'idle', // idle | loading | active | finished | error
+  status: 'idle',
   questions: [],
   currentIndex: 0,
   answers: {},
@@ -27,12 +29,11 @@ export function useQuiz() {
     setState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  // Generate questions via serverless API
   const generateQuestions = useCallback(async (difficulty = 'medium', playerName = '') => {
-    setPartialState({ 
-      status: 'loading', 
-      error: null, 
-      difficulty, 
+    setPartialState({
+      status: 'loading',
+      error: null,
+      difficulty,
       playerName,
       questions: [],
       answers: {},
@@ -44,79 +45,72 @@ export function useQuiz() {
     });
 
     try {
-      const response = await fetch(`${APP_CONFIG.apiBase}/generate-questions`, {
+      const response = await fetch(`${API_BASE}/generate-questions`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          difficulty, 
-          count: QUIZ_CONFIG.totalQuestions 
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ difficulty, count: QUIZ_CONFIG.totalQuestions }),
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+        throw new Error(`Request failed: ${response.status}`);
       }
 
       const data = await response.json();
-      
+
       if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
-        throw new Error('No questions received from API');
+        throw new Error('No questions received');
       }
 
       startTimeRef.current = Date.now();
       questionStartTimeRef.current = Date.now();
 
-      setPartialState({ 
-        status: 'active', 
+      setPartialState({
+        status: 'active',
         questions: data.questions,
         currentIndex: 0,
       });
 
       return { success: true, fallback: data.fallback || false };
     } catch (error) {
-      console.error('Failed to generate questions:', error);
-      setPartialState({ 
-        status: 'error', 
-        error: error.message || 'Failed to generate questions. Please try again.' 
+      console.error('generateQuestions error:', error);
+      setPartialState({
+        status: 'error',
+        error: error.message || 'Failed to load questions. Please try again.',
       });
       return { success: false, error: error.message };
     }
   }, [setPartialState]);
 
-  // Answer a question
   const answerQuestion = useCallback((answer) => {
     setState(prev => {
       if (prev.status !== 'active') return prev;
-      
-      const timeTaken = questionStartTimeRef.current 
+
+      const timeTaken = questionStartTimeRef.current
         ? Math.round((Date.now() - questionStartTimeRef.current) / 1000)
         : QUIZ_CONFIG.timePerQuestion;
-      
+
       const currentQuestion = prev.questions[prev.currentIndex];
       const isCorrect = answer === currentQuestion?.answer;
       const newStreak = isCorrect ? prev.streak + 1 : 0;
       const newMaxStreak = Math.max(prev.maxStreak, newStreak);
-      
+
       const newAnswers = { ...prev.answers, [prev.currentIndex]: answer };
       const newTimeData = { ...prev.timeData, [prev.currentIndex]: timeTaken };
-      
+
       const isLastQuestion = prev.currentIndex >= prev.questions.length - 1;
-      
+
       if (isLastQuestion) {
-        // Calculate final results
         const scoreData = calculateScore(
           Object.values(newAnswers),
           prev.questions,
           newTimeData,
           prev.difficulty
         );
-        
-        const totalTimeTaken = startTimeRef.current 
+
+        const totalTimeTaken = startTimeRef.current
           ? Math.round((Date.now() - startTimeRef.current) / 1000)
           : 0;
-        
+
         const finalResults = {
           ...scoreData,
           playerName: prev.playerName,
@@ -125,8 +119,8 @@ export function useQuiz() {
           maxStreak: newMaxStreak,
           completedAt: new Date().toISOString(),
         };
-        
-        // Submit to leaderboard (async, don't block)
+
+        // Submit to leaderboard async
         if (prev.playerName && db) {
           db.submitScore({
             name: prev.playerName,
@@ -137,7 +131,7 @@ export function useQuiz() {
             tier: `${scoreData.percentage}%`,
           }).catch(console.error);
         }
-        
+
         return {
           ...prev,
           answers: newAnswers,
@@ -148,10 +142,9 @@ export function useQuiz() {
           maxStreak: newMaxStreak,
         };
       }
-      
-      // Move to next question
+
       questionStartTimeRef.current = Date.now();
-      
+
       return {
         ...prev,
         answers: newAnswers,
@@ -163,26 +156,22 @@ export function useQuiz() {
     });
   }, []);
 
-  // Time out (no answer given)
   const timeOut = useCallback(() => {
     answerQuestion(null);
   }, [answerQuestion]);
 
-  // Reset quiz
   const resetQuiz = useCallback(() => {
     setState(INITIAL_STATE);
     startTimeRef.current = null;
     questionStartTimeRef.current = null;
   }, []);
 
-  // Computed values
   const currentQuestion = state.questions[state.currentIndex] || null;
-  const progress = state.questions.length > 0 
-    ? ((state.currentIndex) / state.questions.length) * 100 
+  const progress = state.questions.length > 0
+    ? (state.currentIndex / state.questions.length) * 100
     : 0;
 
   return {
-    // State
     status: state.status,
     questions: state.questions,
     currentQuestion,
@@ -195,14 +184,10 @@ export function useQuiz() {
     streak: state.streak,
     maxStreak: state.maxStreak,
     progress,
-    
-    // Actions
     generateQuestions,
     answerQuestion,
     timeOut,
     resetQuiz,
-    
-    // Computed
     isLoading: state.status === 'loading',
     isActive: state.status === 'active',
     isFinished: state.status === 'finished',
