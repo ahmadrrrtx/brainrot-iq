@@ -1,0 +1,298 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ══════════════════════════════════════════════ */
+/*                 CSS VARIABLES                 */
+/* ══════════════════════════════════════════════ */
+:root {
+  --bg-primary: #0a0a14;
+  --bg-secondary: #12121f;
+  --bg-card: #16162a;
+  --accent-purple: #7c3aed;
+  --accent-pink: #ec4899;
+  --accent-cyan: #06b6d4;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(124, 58, 237, 0.2);
+  --glow-purple: rgba(124, 58, 237, 0.5);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ══════════════════════════════════════════════ */
+/*                 BASE STYLES                   */
+/* ══════════════════════════════════════════════ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════ */
+/*              CUSTOM SCROLLBAR                 */
+/* ══════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-purple);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9333ea;
+}
+
+/* ══════════════════════════════════════════════ */
+/*              SELECTION STYLES                 */
+/* ══════════════════════════════════════════════ */
+::selection {
+  background: rgba(124, 58, 237, 0.4);
+  color: white;
+}
+
+/* ══════════════════════════════════════════════ */
+/*              COMPONENT CLASSES                */
+/* ══════════════════════════════════════════════ */
+@layer components {
+  /* Glass card effect */
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-card:hover {
+    @apply border-purple-500/30;
+    box-shadow: 0 8px 40px rgba(124, 58, 237, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* Neon button */
+  .btn-neon {
+    @apply relative px-8 py-4 font-bold text-white rounded-xl overflow-hidden transition-all duration-300;
+    background: linear-gradient(135deg, #7c3aed, #9333ea);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+  }
+
+  .btn-neon:hover {
+    @apply scale-105;
+    box-shadow: 0 0 30px rgba(124, 58, 237, 0.7), 0 0 60px rgba(124, 58, 237, 0.3);
+  }
+
+  .btn-neon:active {
+    @apply scale-95;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply px-6 py-3 font-semibold text-purple-300 rounded-xl border border-purple-500/30 transition-all duration-300;
+  }
+
+  .btn-ghost:hover {
+    @apply bg-purple-500/10 border-purple-500/60 text-white;
+  }
+
+  /* Option button */
+  .option-btn {
+    @apply w-full text-left p-4 rounded-xl border border-white/10 transition-all duration-200 font-medium;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .option-btn:hover:not(:disabled) {
+    @apply border-purple-500/50;
+    background: rgba(124, 58, 237, 0.1);
+    transform: translateX(4px);
+  }
+
+  .option-btn.correct {
+    @apply border-green-400/60 text-green-300;
+    background: rgba(74, 222, 128, 0.1);
+  }
+
+  .option-btn.incorrect {
+    @apply border-red-400/60 text-red-300;
+    background: rgba(248, 113, 113, 0.1);
+  }
+
+  .option-btn.selected {
+    @apply border-purple-500/60 text-purple-200;
+    background: rgba(124, 58, 237, 0.15);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #c084fc, #7c3aed, #06b6d4);
+  }
+
+  .gradient-text-pink {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #f472b6, #ec4899, #a855f7);
+  }
+
+  /* Neon glow effects */
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.6);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(124, 58, 237, 0.8), 0 0 40px rgba(124, 58, 237, 0.4);
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-2 rounded-full overflow-hidden bg-white/10;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg, #7c3aed, #c084fc, #06b6d4);
+    box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  /* Animated background grid */
+  .bg-grid {
+    background-image: linear-gradient(rgba(124, 58, 237, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124, 58, 237, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  /* Input styles */
+  .input-neon {
+    @apply w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/30 outline-none transition-all duration-300 font-sans;
+  }
+
+  .input-neon:focus {
+    @apply border-purple-500/60;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  }
+
+  /* Leaderboard rank styles */
+  .rank-1 {
+    @apply text-yellow-400;
+    text-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
+  }
+
+  .rank-2 {
+    @apply text-slate-300;
+    text-shadow: 0 0 10px rgba(203, 213, 225, 0.6);
+  }
+
+  .rank-3 {
+    @apply text-orange-400;
+    text-shadow: 0 0 10px rgba(251, 146, 60, 0.6);
+  }
+}
+
+/* ══════════════════════════════════════════════ */
+/*                  ANIMATIONS                   */
+/* ══════════════════════════════════════════════ */
+@layer utilities {
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+  .animate-delay-700 { animation-delay: 700ms; }
+  .animate-delay-1000 { animation-delay: 1000ms; }
+}
+
+/* ══════════════════════════════════════════════ */
+/*           PARTICLE BACKGROUND                 */
+/* ══════════════════════════════════════════════ */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: floatParticle linear infinite;
+}
+
+@keyframes floatParticle {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-100px) scale(1); opacity: 0; }
+}
+
+/* ══════════════════════════════════════════════ */
+/*           LOADING SKELETON                    */
+/* ══════════════════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ══════════════════════════════════════════════ */
+/*            QUIZ OPTION LETTERS               */
+/* ══════════════════════════════════════════════ */
+.option-letter {
+  @apply inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold flex-shrink-0;
+  background: rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+/* ══════════════════════════════════════════════ */
+/*            COUNTDOWN RING                    */
+/* ══════════════════════════════════════════════ */
+.countdown-ring {
+  transform-origin: center;
+  animation: countdownPulse 1s ease-in-out infinite;
+}
+
+@keyframes countdownPulse {
+  0%, 100% { stroke-width: 4; }
+  50% { stroke-width: 6; }
+}
+
+/* ══════════════════════════════════════════════ */
+/*           MOBILE RESPONSIVE                   */
+/* ══════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .glass-card {
+    @apply rounded-xl;
+  }
+
+  .btn-neon {
+    @apply px-6 py-3 text-sm;
+  }
+}

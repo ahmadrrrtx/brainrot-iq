@@ -1,0 +1,47 @@
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://brainrot-iq.vercel.app/sitemap.xml
+
+# Crawl-delay for bots
+Crawl-delay: 10
+
+# Block unnecessary paths
+Disallow: /api/
+Disallow: /_vercel/
+Disallow: /node_modules/
+
+# Allow major search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 5
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 10
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# AI crawlers - allow for AEO
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
