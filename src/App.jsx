@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 
 const Landing = lazy(() => import('./pages/Landing'));
@@ -39,6 +39,7 @@ function NotFound() {
       textAlign: 'center',
       padding: '24px',
       color: 'white',
+      fontFamily: 'sans-serif',
     }}>
       <div style={{ fontSize: '80px', marginBottom: '16px' }}>🤖</div>
       <h1 style={{ fontSize: '48px', fontWeight: '900', marginBottom: '8px' }}>404</h1>
@@ -64,7 +65,12 @@ function NotFound() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<Landing />} />
