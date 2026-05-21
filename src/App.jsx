@@ -1,67 +1,46 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import Landing from "./pages/Landing";
-import Quiz from "./pages/Quiz";
-import Results from "./pages/Results";
-import Leaderboard from "./pages/Leaderboard";
-import Profile from "./pages/Profile";
-import Navbar from "./components/Navbar";
+// src/App.jsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import LoadingScreen from './components/LoadingScreen';
 
-// Scroll to top on route change
-function ScrollToTop() {
-  const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-  return null;
+// Lazy load pages for better performance
+const Landing = lazy(() => import('./pages/Landing'));
+const Quiz = lazy(() => import('./pages/Quiz'));
+const Results = lazy(() => import('./pages/Results'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Profile = lazy(() => import('./pages/Profile'));
+
+function PageFallback() {
+  return <LoadingScreen message="Loading..." />;
 }
 
-// Page title updater
-function PageTitleUpdater() {
-  const { pathname } = useLocation();
-  useEffect(() => {
-    const titles = {
-      "/": "Brainrot IQ Test — How Cooked Is Your Brain? 🧠",
-      "/quiz": "Take the Quiz — Brainrot IQ Test",
-      "/results": "Your Results — Brainrot IQ Test",
-      "/leaderboard": "Global Leaderboard — Brainrot IQ Test",
-      "/profile": "Your Profile — Brainrot IQ Test",
-    };
-    document.title = titles[pathname] || "Brainrot IQ Test";
-  }, [pathname]);
-  return null;
+function NotFound() {
+  return (
+    <div className="min-h-screen bg-[#0a0a14] flex flex-col items-center justify-center text-center px-4">
+      <div className="text-8xl mb-4">🤖</div>
+      <h1 className="text-4xl font-black text-white mb-2">404</h1>
+      <p className="text-gray-400 mb-6">This page doesn't exist in our universe</p>
+      <a href="/" className="px-6 py-3 bg-violet-600 text-white font-bold rounded-xl">
+        🏠 Go Home
+      </a>
+    </div>
+  );
 }
 
 export default function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <PageTitleUpdater />
-      <div className="min-h-screen flex flex-col" style={{ background: "var(--bg-primary)" }}>
-        <Navbar />
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/quiz" element={<Quiz />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </main>
-        <footer className="text-center py-6 text-white/30 text-sm">
-          <p>
-            Made with 🧠 brainrot ·{" "}
-            <a
-              href="https://github.com/ahmadrrrtx/brainrot-iq"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-purple-400 hover:text-purple-300 transition-colors"
-            >
-              GitHub
-            </a>
-          </p>
-        </footer>
-      </div>
-    </Router>
+    <BrowserRouter>
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/quiz" element={<Quiz />} />
+          <Route path="/results" element={<Results />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
   );
 }
