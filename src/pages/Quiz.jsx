@@ -1,460 +1,280 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import NameModal from "../components/NameModal";
-import Timer from "../components/Timer";
-import LoadingScreen from "../components/LoadingScreen";
-import { useSound } from "../hooks/useSound";
-import { storage } from "../utils";
-import {
-  PLAYER_NAME_KEY,
-  PLAYER_ID_KEY,
-  QUIZ_CONFIG,
-  ANSWER_LETTERS,
-  LOADING_MESSAGES,
-} from "../constants";
+// src/pages/Quiz.jsx
+import { useEffect, useCallback, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useQuiz } from '../hooks/useQuiz';
+import { storage } from '../utils';
+import { QUIZ_CONFIG } from '../constants';
+import Timer from '../components/Timer';
+import LoadingScreen from '../components/LoadingScreen';
+import Toast from '../components/Toast';
 
-// ─── Groq AI prompt ───────────────────────
-const buildPrompt = (name) => `You are a Gen-Z internet culture expert generating questions for the "Brainrot IQ Test".
-
-Player name: ${name}
-
-Generate EXACTLY ${QUIZ_CONFIG.totalQuestions} multiple-choice questions testing knowledge of:
-- Gen-Z slang (rizz, gyatt, slay, based, cope, mewing, looksmaxxing, etc.)
-- Internet culture (sigma, NPC, ohio, skibidi, ratio, no cap, bussin)
-- Viral memes and trends (2020-2024)
-- Brainrot vocabulary and expressions
-- TikTok/YouTube/Twitter culture
-
-STRICT RULES:
-1. Each question must have exactly 4 options labeled 0, 1, 2, 3
-2. Exactly ONE correct answer per question
-3. Questions must be fun, punchy, and 15 words max
-4. Wrong answers must be plausible but clearly wrong to someone who knows
-5. Vary difficulty: 3 easy, 4 medium, 3 hard
-6. Reference ${name} in at least 2 questions for personalization
-7. NEVER repeat similar questions
-
-Return ONLY valid JSON with zero markdown, zero explanation:
-{
-  "questions": [
-    {
-      "question": "What does 'no cap' mean in Gen-Z speak?",
-      "options": ["I'm lying", "I'm serious/truthful", "I don't care", "That's boring"],
-      "correctAnswer": 1,
-      "difficulty": "easy",
-      "category": "slang"
-    }
-  ]
-}`;
-
-// ─── Quiz Header ─────────────────────────
-function QuizHeader({ currentIndex, total, progress, playerName }) {
-  return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="text-xl">🧠</div>
-          <div>
-            <div className="text-white font-semibold text-sm">{playerName}</div>
-            <div className="text-white/40 text-xs">Brainrot Test</div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-white/60 text-sm font-medium">
-            Question <span className="text-purple-300 font-bold">{currentIndex + 1}</span>
-            <span className="text-white/30">/{total}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="progress-bar">
-        <div
-          className="progress-fill"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─── Question Card ─────────────────────────
-function QuestionCard({ question, options, selectedAnswer, isAnswered, onAnswer, timeLeft }) {
-  const [animKey, setAnimKey] = useState(0);
-
-  useEffect(() => {
-    setAnimKey((prev) => prev + 1);
-  }, [question]);
-
-  return (
-    <div key={animKey} className="animate-fade-up">
-      {/* Question */}
-      <div className="glass-card p-6 mb-4">
-        <div className="flex items-start justify-between gap-4">
-          <p className="text-white font-semibold text-lg leading-snug flex-1">{question}</p>
-          <Timer timeLeft={timeLeft} />
-        </div>
-      </div>
-
-      {/* Options */}
-      <div className="space-y-3">
-        {options.map((option, idx) => {
-          let className = "option-btn";
-          if (isAnswered) {
-            if (idx === selectedAnswer?.correct) className += " correct";
-            else if (idx === selectedAnswer?.selected && !selectedAnswer?.isCorrect)
-              className += " incorrect";
-          }
-
-          return (
-            <button
-              key={idx}
-              onClick={() => !isAnswered && onAnswer(idx)}
-              disabled={isAnswered}
-              className={className}
-              style={{ animationDelay: `${idx * 60}ms` }}
-            >
-              <div className="flex items-center gap-3">
-                <span className="option-letter">{ANSWER_LETTERS[idx]}</span>
-                <span>{option}</span>
-                {isAnswered && idx === selectedAnswer?.correct && (
-                  <span className="ml-auto text-green-400">✓</span>
-                )}
-                {isAnswered && idx === selectedAnswer?.selected && !selectedAnswer?.isCorrect && (
-                  <span className="ml-auto text-red-400">✗</span>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── MAIN QUIZ ────────────────────────────
 export default function Quiz() {
   const navigate = useNavigate();
-  const { sounds } = useSound();
-  const [playerName, setPlayerName] = useState(storage.get(PLAYER_NAME_KEY, ""));
-  const [playerId] = useState(storage.get(PLAYER_ID_KEY, ""));
-  const [showModal, setShowModal] = useState(!storage.get(PLAYER_NAME_KEY, ""));
-  const [questions, setQuestions] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState([]);
+  const [searchParams] = useSearchParams();
+  const difficulty = searchParams.get('difficulty') || 'medium';
+  
+  const {
+    status, currentQuestion, currentIndex, totalQuestions,
+    answers, streak, progress, error, isLoading, isActive,
+    isFinished, isError, results,
+    generateQuestions, answerQuestion, timeOut, resetQuiz,
+  } = useQuiz();
+
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isAnswered, setIsAnswered] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(QUIZ_CONFIG.timePerQuestion);
-  const timerRef = useRef(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [isFallback, setIsFallback] = useState(false);
 
-  // ─── Fetch Questions ─────────────────────
-  const fetchQuestions = useCallback(async (name) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a JSON-only API. You ONLY output valid JSON. No markdown, no explanation, no backticks. Pure JSON only.",
-            },
-            {
-              role: "user",
-              content: buildPrompt(name),
-            },
-          ],
-          temperature: 0.85,
-          max_tokens: 2500,
-          top_p: 1,
-          stream: false,
-        }),
-      });
+  const playerName = storage.get('playerName', '');
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      let raw = data.choices?.[0]?.message?.content?.trim() || "";
-
-      // Clean markdown if any
-      raw = raw.replace(/```json\n?/gi, "").replace(/```\n?/gi, "").trim();
-
-      const parsed = JSON.parse(raw);
-      if (!parsed.questions || !Array.isArray(parsed.questions)) {
-        throw new Error("Invalid question format");
-      }
-
-      const validated = parsed.questions
-        .filter(
-          (q) =>
-            q.question &&
-            Array.isArray(q.options) &&
-            q.options.length === 4 &&
-            typeof q.correctAnswer === "number"
-        )
-        .slice(0, QUIZ_CONFIG.totalQuestions);
-
-      if (validated.length < 3) throw new Error("Not enough valid questions");
-
-      setQuestions(validated);
-      setCurrentIndex(0);
-      setAnswers([]);
-      setSelectedAnswer(null);
-      setIsAnswered(false);
-    } catch (err) {
-      console.error("Quiz fetch error:", err);
-      setError(err.message || "Failed to generate quiz. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // ─── Timer ───────────────────────────────
-  const startTimer = useCallback(() => {
-    clearInterval(timerRef.current);
-    setTimeLeft(QUIZ_CONFIG.timePerQuestion);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          handleTimeout();
-          return 0;
-        }
-        if (prev <= 5) sounds.tick();
-        return prev - 1;
-      });
-    }, 1000);
-  }, [sounds]);
-
-  const stopTimer = useCallback(() => {
-    clearInterval(timerRef.current);
-  }, []);
-
-  // Start timer when question changes
+  // Initialize quiz
   useEffect(() => {
-    if (questions.length > 0 && !isAnswered) {
-      startTimer();
+    if (!playerName) {
+      navigate('/');
+      return;
     }
-    return () => clearInterval(timerRef.current);
-  }, [currentIndex, questions.length]);
+    
+    const start = async () => {
+      const result = await generateQuestions(difficulty, playerName);
+      if (result?.fallback) {
+        setIsFallback(true);
+        setToast({ message: 'Using cached questions - AI is warming up!', type: 'info' });
+      }
+    };
+    
+    start();
+  }, []);  // eslint-disable-line
 
-  // ─── Handle timeout ───────────────────────
-  const handleTimeout = useCallback(() => {
-    if (isAnswered) return;
-    stopTimer();
-    sounds.incorrect();
-    setSelectedAnswer({ selected: -1, correct: questions[currentIndex]?.correctAnswer, isCorrect: false });
-    setIsAnswered(true);
-    setAnswers((prev) => [
-      ...prev,
-      {
-        questionIndex: currentIndex,
-        selectedAnswer: -1,
-        correctAnswer: questions[currentIndex]?.correctAnswer,
-        isCorrect: false,
-        timedOut: true,
-        timeSpent: QUIZ_CONFIG.timePerQuestion,
-      },
-    ]);
-  }, [isAnswered, questions, currentIndex, stopTimer, sounds]);
-
-  // ─── Handle answer ────────────────────────
-  const handleAnswer = useCallback(
-    (idx) => {
-      if (isAnswered) return;
-      stopTimer();
-
-      const currentQ = questions[currentIndex];
-      const isCorrect = idx === currentQ.correctAnswer;
-
-      if (isCorrect) sounds.correct();
-      else sounds.incorrect();
-
-      setSelectedAnswer({
-        selected: idx,
-        correct: currentQ.correctAnswer,
-        isCorrect,
-      });
-      setIsAnswered(true);
-      setAnswers((prev) => [
-        ...prev,
-        {
-          questionIndex: currentIndex,
-          selectedAnswer: idx,
-          correctAnswer: currentQ.correctAnswer,
-          isCorrect,
-          timeSpent: QUIZ_CONFIG.timePerQuestion - timeLeft,
-        },
-      ]);
-    },
-    [isAnswered, questions, currentIndex, stopTimer, sounds, timeLeft]
-  );
-
-  // ─── Next question ────────────────────────
-  const handleNext = useCallback(() => {
-    sounds.click();
-    if (currentIndex >= questions.length - 1) {
-      // Quiz complete
-      const score = [...answers, ...[]].filter((a) => a.isCorrect).length;
-      const allAnswers = answers;
-      const correctCount = allAnswers.filter((a) => a.isCorrect).length;
-
-      navigate("/results", {
-        state: {
-          answers,
-          questions,
-          playerName,
-          playerId,
-          score: correctCount,
-          total: questions.length,
-        },
-      });
-    } else {
-      setCurrentIndex((prev) => prev + 1);
-      setSelectedAnswer(null);
-      setIsAnswered(false);
-      setTimeLeft(QUIZ_CONFIG.timePerQuestion);
-    }
-  }, [answers, currentIndex, questions, navigate, playerName, playerId, sounds]);
-
-  // ─── On name confirm ─────────────────────
-  const handleNameConfirm = (name, id) => {
-    setPlayerName(name);
-    setShowModal(false);
-    fetchQuestions(name);
-  };
-
-  // Initial load
+  // Navigate to results when finished
   useEffect(() => {
-    if (playerName && questions.length === 0 && !isLoading) {
-      fetchQuestions(playerName);
+    if (isFinished && results) {
+      // Store results for results page
+      storage.set('lastResults', results);
+      setTimeout(() => navigate('/results'), 500);
     }
-  }, [playerName]);
+  }, [isFinished, results, navigate]);
 
-  // ─── Render ───────────────────────────────
-  if (showModal) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center">
-        <NameModal onConfirm={handleNameConfirm} />
-      </div>
-    );
-  }
+  const handleAnswer = useCallback((option) => {
+    if (selectedAnswer !== null || showFeedback) return;
+    
+    setSelectedAnswer(option);
+    setShowFeedback(true);
+    
+    const isCorrect = option === currentQuestion?.answer;
+    
+    if (isCorrect) {
+      setToast({ 
+        message: streak >= 2 ? `🔥 ${streak + 1} streak!` : '✅ Correct!', 
+        type: 'success' 
+      });
+    }
+    
+    // Short delay to show feedback then proceed
+    setTimeout(() => {
+      answerQuestion(option);
+      setSelectedAnswer(null);
+      setShowFeedback(false);
+    }, 800);
+  }, [selectedAnswer, showFeedback, currentQuestion, streak, answerQuestion]);
 
+  const handleTimeOut = useCallback(() => {
+    if (!showFeedback) {
+      setSelectedAnswer(null);
+      setShowFeedback(true);
+      setToast({ message: "⏰ Time's up!", type: 'error' });
+      
+      setTimeout(() => {
+        timeOut();
+        setShowFeedback(false);
+      }, 600);
+    }
+  }, [showFeedback, timeOut]);
+
+  // Loading state
   if (isLoading) {
-    return <LoadingScreen message={`Cooking up questions for ${playerName}... 🧠`} />;
+    return <LoadingScreen message="AI is generating your questions..." submessage="Cooking up the brainrot..." />;
   }
 
-  if (error) {
+  // Error state
+  if (isError) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4">
-        <div className="glass-card p-10 max-w-md w-full text-center">
-          <div className="text-5xl mb-4">😵</div>
-          <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
-          <p className="text-white/50 text-sm mb-6">{error}</p>
-          <button
-            onClick={() => fetchQuestions(playerName)}
-            className="btn-neon w-full"
-          >
-            Try Again ⚡
-          </button>
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="text-6xl mb-4">💀</div>
+          <h2 className="text-2xl font-bold text-white mb-2">Something went wrong</h2>
+          <p className="text-gray-400 mb-6 max-w-sm">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => generateQuestions(difficulty, playerName)}
+              className="px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-500 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-colors"
+            >
+              Go Home
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (questions.length === 0) {
-    return <LoadingScreen message="Initializing brainrot detector..." />;
+  if (!isActive || !currentQuestion) {
+    return <LoadingScreen message="Preparing quiz..." />;
   }
 
-  const currentQ = questions[currentIndex];
-  const progress = ((currentIndex + (isAnswered ? 1 : 0)) / questions.length) * 100;
+  const getOptionStyle = (option) => {
+    if (!showFeedback) {
+      return 'border-white/10 bg-white/5 text-gray-300 hover:border-violet-500/50 hover:bg-violet-500/10 hover:text-white';
+    }
+    if (option === currentQuestion.answer) {
+      return 'border-green-500/60 bg-green-500/15 text-green-300';
+    }
+    if (option === selectedAnswer && option !== currentQuestion.answer) {
+      return 'border-red-500/60 bg-red-500/15 text-red-300';
+    }
+    return 'border-white/5 bg-white/3 text-gray-500';
+  };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-screen bg-[#0a0a14] relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-72 h-72 bg-violet-800/15 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-purple-800/15 rounded-full blur-3xl" />
+      </div>
+
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
+
+      <div className="relative z-10 max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col">
+        
         {/* Header */}
-        <QuizHeader
-          currentIndex={currentIndex}
-          total={questions.length}
-          progress={progress}
-          playerName={playerName}
-        />
-
-        {/* Question */}
-        <QuestionCard
-          question={currentQ.question}
-          options={currentQ.options}
-          selectedAnswer={selectedAnswer}
-          isAnswered={isAnswered}
-          onAnswer={handleAnswer}
-          timeLeft={timeLeft}
-        />
-
-        {/* Answer feedback & Next button */}
-        {isAnswered && (
-          <div className="mt-6 animate-fade-up">
-            {/* Feedback */}
-            <div className={`glass-card p-4 mb-4 flex items-center gap-3 ${
-              selectedAnswer?.isCorrect
-                ? "border-green-500/30 bg-green-500/5"
-                : "border-red-500/30 bg-red-500/5"
-            }`}>
-              <span className="text-2xl">
-                {selectedAnswer?.isCorrect ? "✅" : selectedAnswer?.timedOut ? "⏰" : "❌"}
-              </span>
-              <div>
-                <p className={`font-semibold text-sm ${
-                  selectedAnswer?.isCorrect ? "text-green-300" : "text-red-300"
-                }`}>
-                  {selectedAnswer?.isCorrect
-                    ? "Correct! You actually know things 🔥"
-                    : selectedAnswer?.timedOut
-                    ? "Time's up! Skill issue detected ⏰"
-                    : "Nah that's not it chief ❌"}
-                </p>
-                {!selectedAnswer?.isCorrect && selectedAnswer?.correct >= 0 && (
-                  <p className="text-white/50 text-xs mt-0.5">
-                    Correct answer: {currentQ.options[selectedAnswer.correct]}
-                  </p>
-                )}
-              </div>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate('/')}
+            className="text-gray-500 hover:text-gray-300 transition-colors text-sm flex items-center gap-1"
+          >
+            ← Exit
+          </button>
+          
+          <div className="flex items-center gap-3">
+            {streak >= 2 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 rounded-full px-3 py-1"
+              >
+                <span className="text-orange-400 text-xs font-bold">🔥 {streak} streak</span>
+              </motion.div>
+            )}
+            
+            <div className="text-sm text-gray-400 font-medium">
+              <span className="text-white font-bold">{currentIndex + 1}</span>
+              <span className="text-gray-600"> / </span>
+              <span>{totalQuestions}</span>
             </div>
-
-            {/* Score tracker */}
-            <div className="flex items-center justify-between mb-4 px-1">
-              <span className="text-white/40 text-sm">
-                ✅ {answers.filter((a) => a.isCorrect).length} correct
-              </span>
-              <span className="text-white/40 text-sm">
-                {currentIndex < questions.length - 1
-                  ? `${questions.length - currentIndex - 1} left`
-                  : "Last question!"}
-              </span>
-            </div>
-
-            <button
-              onClick={handleNext}
-              className="btn-neon w-full flex items-center justify-center gap-2 text-base"
-            >
-              {currentIndex >= questions.length - 1 ? (
-                <>See My Results 🏆</>
-              ) : (
-                <>Next Question →</>
-              )}
-            </button>
           </div>
-        )}
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full h-1.5 bg-white/5 rounded-full mb-8 overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.4 }}
+          />
+        </div>
+
+        {/* Question Card */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.25 }}
+            className="flex-1 flex flex-col"
+          >
+            {/* Category & Timer Row */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{currentQuestion.emoji || '🧠'}</span>
+                <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                  {currentQuestion.category || 'Internet Culture'}
+                </span>
+              </div>
+              <Timer
+                key={`timer-${currentIndex}`}
+                duration={QUIZ_CONFIG.timePerQuestion}
+                onComplete={handleTimeOut}
+                isPaused={showFeedback}
+              />
+            </div>
+
+            {/* Question */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
+              <p className="text-white text-xl font-semibold leading-relaxed">
+                {currentQuestion.question}
+              </p>
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3">
+              {currentQuestion.options?.map((option, idx) => (
+                <motion.button
+                  key={`${currentIndex}-${idx}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.06 }}
+                  whileHover={!showFeedback ? { scale: 1.01 } : {}}
+                  whileTap={!showFeedback ? { scale: 0.99 } : {}}
+                  onClick={() => handleAnswer(option)}
+                  disabled={showFeedback}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all cursor-pointer ${getOptionStyle(option)}`}
+                >
+                  <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-gray-500">
+                    {String.fromCharCode(65 + idx)}
+                  </span>
+                  <span className="flex-1 font-medium">{option}</span>
+                  {showFeedback && option === currentQuestion.answer && (
+                    <span className="text-green-400 text-lg">✓</span>
+                  )}
+                  {showFeedback && option === selectedAnswer && option !== currentQuestion.answer && (
+                    <span className="text-red-400 text-lg">✗</span>
+                  )}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Explanation (shown after answer) */}
+            <AnimatePresence>
+              {showFeedback && currentQuestion.explanation && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-4 bg-violet-900/20 border border-violet-500/20 rounded-xl p-3"
+                >
+                  <p className="text-gray-300 text-sm">
+                    <span className="text-violet-400 font-semibold">💡 </span>
+                    {currentQuestion.explanation}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
