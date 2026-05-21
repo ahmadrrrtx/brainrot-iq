@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { getIQTier } from '../constants';
 import { storage, formatTime, getTwitterShareUrl, getWhatsAppShareUrl, shareResult } from '../utils';
+import ShareCard from '../components/ShareCard';
 
 export default function Results() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function Results() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [shareStatus, setShareStatus] = useState('');
   const [showReview, setShowReview] = useState(false);
+  const [showCard, setShowCard] = useState(false);
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -37,7 +39,12 @@ export default function Results() {
 
   const handleShare = async (method) => {
     if (method === 'copy') {
-      const res = await shareResult({ score: results.correctCount, total: results.totalQuestions, tier, difficulty: results.difficulty });
+      const res = await shareResult({
+        score: results.correctCount,
+        total: results.totalQuestions,
+        tier,
+        difficulty: results.difficulty,
+      });
       setShareStatus(res.success ? '📋 Copied to clipboard!' : 'Share failed');
       setTimeout(() => setShareStatus(''), 3000);
     } else if (method === 'twitter') {
@@ -58,6 +65,14 @@ export default function Results() {
           colors={['#7c3aed', '#9f67fa', '#c084fc', '#e879f9', '#f472b6', '#fb923c']}
         />
       )}
+
+      {/* Share Card Modal */}
+      <ShareCard
+        results={results}
+        tier={tier}
+        isOpen={showCard}
+        onClose={() => setShowCard(false)}
+      />
 
       {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
@@ -92,7 +107,7 @@ export default function Results() {
             <h1 className="text-4xl font-black text-white mb-1">{tier.label}</h1>
             <p className="text-gray-500 mb-5">{tier.description}</p>
 
-            {/* Score display */}
+            {/* Score */}
             <div className="inline-flex items-baseline gap-1 bg-white/[0.04] border border-white/10 rounded-2xl px-8 py-4">
               <span className="text-6xl font-black text-white">{results.correctCount}</span>
               <span className="text-gray-600 text-3xl">/</span>
@@ -102,7 +117,7 @@ export default function Results() {
           </motion.div>
         </motion.div>
 
-        {/* ── Stats Grid ── */}
+        {/* ── Stats ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -122,7 +137,7 @@ export default function Results() {
           ))}
         </motion.div>
 
-        {/* ── Difficulty Badge ── */}
+        {/* ── Difficulty ── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -139,7 +154,7 @@ export default function Results() {
             </span>
             <span className="text-gray-600 text-sm">·</span>
             <span className="text-gray-500 text-sm">
-              Multiplier: ×{results.difficulty === 'hard' ? '2.0' : results.difficulty === 'medium' ? '1.5' : '1.0'}
+              ×{results.difficulty === 'hard' ? '2.0' : results.difficulty === 'medium' ? '1.5' : '1.0'}
             </span>
           </div>
         </motion.div>
@@ -162,7 +177,31 @@ export default function Results() {
           </div>
         </motion.div>
 
-        {/* ── Share ── */}
+        {/* ── SHARE CARD BUTTON ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.52 }}
+          className="mb-5"
+        >
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowCard(true)}
+            className="w-full py-4 bg-gradient-to-r from-pink-600/80 via-violet-600/80 to-purple-600/80 hover:from-pink-500/90 hover:via-violet-500/90 hover:to-purple-500/90 border border-violet-500/30 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-3 relative overflow-hidden group"
+          >
+            {/* Shimmer */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/8 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+            <span className="text-xl">🎴</span>
+            <div className="text-left">
+              <div className="font-black text-base">Get Shareable Card</div>
+              <div className="text-white/60 text-xs font-normal">Download PNG for stories & posts</div>
+            </div>
+            <span className="ml-auto text-white/40 text-sm">→</span>
+          </motion.button>
+        </motion.div>
+
+        {/* ── Text Share ── */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -182,8 +221,8 @@ export default function Results() {
             )}
           </AnimatePresence>
 
-          <p className="text-center text-gray-600 text-xs uppercase tracking-widest mb-3">
-            Flex on your friends
+          <p className="text-center text-gray-700 text-xs uppercase tracking-widest mb-3">
+            Or share as text
           </p>
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -202,7 +241,7 @@ export default function Results() {
           </div>
         </motion.div>
 
-        {/* ── Question Review Toggle ── */}
+        {/* ── Review ── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -211,12 +250,12 @@ export default function Results() {
         >
           <button
             onClick={() => setShowReview(!showReview)}
-            className="w-full flex items-center justify-between bg-white/[0.03] border border-white/8 rounded-2xl px-5 py-4 text-left hover:bg-white/[0.05] transition-all"
+            className="w-full flex items-center justify-between bg-white/[0.03] border border-white/8 rounded-2xl px-5 py-4 hover:bg-white/[0.05] transition-all"
           >
             <span className="text-white font-bold text-sm">Review Answers</span>
             <motion.span
               animate={{ rotate: showReview ? 180 : 0 }}
-              className="text-gray-500"
+              className="text-gray-500 text-sm"
             >
               ↓
             </motion.span>
@@ -261,7 +300,7 @@ export default function Results() {
           </AnimatePresence>
         </motion.div>
 
-        {/* ── Action Buttons ── */}
+        {/* ── Actions ── */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
