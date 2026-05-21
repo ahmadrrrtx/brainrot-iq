@@ -1,27 +1,32 @@
 {
-  "name": "Brainrot IQ Test",
-  "short_name": "BrainrotIQ",
-  "description": "The ultimate AI-powered Gen-Z Brainrot IQ Test. Discover your brainrot level and compete globally!",
+  "name": "BrainRot IQ - Internet Culture Quiz",
+  "short_name": "BrainRot IQ",
+  "description": "Test your internet culture IQ with AI-generated brainrot questions",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f0f1a",
-  "theme_color": "#7c3aed",
+  "theme_color": "#7C3AED",
   "orientation": "portrait-primary",
   "scope": "/",
-  "lang": "en",
-  "categories": ["entertainment", "games", "education"],
-  "screenshots": [
-    {
-      "src": "/og-image.png",
-      "sizes": "1200x630",
-      "type": "image/png"
-    }
-  ],
+  "lang": "en-US",
+  "categories": ["games", "entertainment", "education"],
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
@@ -29,16 +34,25 @@
     {
       "name": "Take Quiz",
       "short_name": "Quiz",
-      "description": "Start a new Brainrot IQ Test",
+      "description": "Start a new BrainRot IQ quiz",
       "url": "/quiz",
       "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
     },
     {
       "name": "Leaderboard",
-      "short_name": "Rankings",
+      "short_name": "Ranks",
       "description": "View global leaderboard",
       "url": "/leaderboard",
       "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "BrainRot IQ Quiz Screen"
     }
   ]
 }
