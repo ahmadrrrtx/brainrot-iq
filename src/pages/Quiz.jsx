@@ -9,113 +9,93 @@ import Timer from '../components/Timer';
 import LoadingScreen from '../components/LoadingScreen';
 import Toast from '../components/Toast';
 
+const DIFFICULTY_LABELS = {
+  easy: { label: 'Easy', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
+  medium: { label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' },
+  hard: { label: 'Hard', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
+};
+
 export default function Quiz() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const difficulty = searchParams.get('difficulty') || 'medium';
-  
+
   const {
     status, currentQuestion, currentIndex, totalQuestions,
-    answers, streak, progress, error, isLoading, isActive,
+    streak, progress, error, isLoading, isActive,
     isFinished, isError, results,
-    generateQuestions, answerQuestion, timeOut, resetQuiz,
+    generateQuestions, answerQuestion, timeOut,
   } = useQuiz();
 
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [toast, setToast] = useState(null);
-  const [isFallback, setIsFallback] = useState(false);
 
   const playerName = storage.get('playerName', '');
+  const diffConfig = DIFFICULTY_LABELS[difficulty] || DIFFICULTY_LABELS.medium;
 
-  // Initialize quiz
   useEffect(() => {
-    if (!playerName) {
-      navigate('/');
-      return;
-    }
-    
-    const start = async () => {
-      const result = await generateQuestions(difficulty, playerName);
-      if (result?.fallback) {
-        setIsFallback(true);
-        setToast({ message: 'Using cached questions - AI is warming up!', type: 'info' });
-      }
-    };
-    
-    start();
-  }, []);  // eslint-disable-line
+    if (!playerName) { navigate('/'); return; }
+    generateQuestions(difficulty, playerName);
+  }, []); // eslint-disable-line
 
-  // Navigate to results when finished
   useEffect(() => {
     if (isFinished && results) {
-      // Store results for results page
       storage.set('lastResults', results);
-      setTimeout(() => navigate('/results'), 500);
+      setTimeout(() => navigate('/results'), 600);
     }
   }, [isFinished, results, navigate]);
 
   const handleAnswer = useCallback((option) => {
     if (selectedAnswer !== null || showFeedback) return;
-    
     setSelectedAnswer(option);
     setShowFeedback(true);
-    
     const isCorrect = option === currentQuestion?.answer;
-    
     if (isCorrect) {
-      setToast({ 
-        message: streak >= 2 ? `🔥 ${streak + 1} streak!` : '✅ Correct!', 
-        type: 'success' 
-      });
+      setToast({ message: streak >= 2 ? `🔥 ${streak + 1}x Streak!` : '✅ Correct!', type: 'success' });
+    } else {
+      setToast({ message: '❌ Wrong!', type: 'error' });
     }
-    
-    // Short delay to show feedback then proceed
     setTimeout(() => {
       answerQuestion(option);
       setSelectedAnswer(null);
       setShowFeedback(false);
-    }, 800);
+    }, 900);
   }, [selectedAnswer, showFeedback, currentQuestion, streak, answerQuestion]);
 
   const handleTimeOut = useCallback(() => {
     if (!showFeedback) {
-      setSelectedAnswer(null);
       setShowFeedback(true);
-      setToast({ message: "⏰ Time's up!", type: 'error' });
-      
+      setToast({ message: "⏰ Too slow!", type: 'error' });
       setTimeout(() => {
         timeOut();
+        setSelectedAnswer(null);
         setShowFeedback(false);
-      }, 600);
+      }, 700);
     }
   }, [showFeedback, timeOut]);
 
-  // Loading state
-  if (isLoading) {
-    return <LoadingScreen message="AI is generating your questions..." submessage="Cooking up the brainrot..." />;
-  }
+  if (isLoading) return <LoadingScreen message="Generating your quiz..." submessage="AI is cooking up the brainrot 🍳" />;
 
-  // Error state
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="text-6xl mb-4">💀</div>
-          <h2 className="text-2xl font-bold text-white mb-2">Something went wrong</h2>
-          <p className="text-gray-400 mb-6 max-w-sm">{error}</p>
+      <div className="min-h-screen bg-[#07070f] flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="text-7xl mb-4">💀</div>
+          <h2 className="text-2xl font-black text-white mb-2">Something broke</h2>
+          <p className="text-gray-500 mb-6 text-sm">{error}</p>
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => generateQuestions(difficulty, playerName)}
-              className="px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-500 transition-colors"
+              className="px-5 py-2.5 bg-violet-600 text-white rounded-xl font-bold text-sm hover:bg-violet-500 transition-colors"
             >
-              Try Again
+              Retry
             </button>
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-3 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-colors"
+              className="px-5 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl font-bold text-sm hover:bg-white/10 transition-colors"
             >
-              Go Home
+              Home
             </button>
           </div>
         </div>
@@ -123,94 +103,98 @@ export default function Quiz() {
     );
   }
 
-  if (!isActive || !currentQuestion) {
-    return <LoadingScreen message="Preparing quiz..." />;
-  }
+  if (!isActive || !currentQuestion) return <LoadingScreen message="Preparing..." />;
 
   const getOptionStyle = (option) => {
+    const base = 'w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer';
     if (!showFeedback) {
-      return 'border-white/10 bg-white/5 text-gray-300 hover:border-violet-500/50 hover:bg-violet-500/10 hover:text-white';
+      return `${base} border-white/8 bg-white/[0.03] text-gray-300 hover:border-violet-500/40 hover:bg-violet-500/8 hover:text-white active:scale-[0.99]`;
     }
     if (option === currentQuestion.answer) {
-      return 'border-green-500/60 bg-green-500/15 text-green-300';
+      return `${base} border-green-500/50 bg-green-500/10 text-green-300`;
     }
-    if (option === selectedAnswer && option !== currentQuestion.answer) {
-      return 'border-red-500/60 bg-red-500/15 text-red-300';
+    if (option === selectedAnswer) {
+      return `${base} border-red-500/50 bg-red-500/10 text-red-300`;
     }
-    return 'border-white/5 bg-white/3 text-gray-500';
+    return `${base} border-white/5 bg-white/[0.01] text-gray-600`;
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a14] relative overflow-hidden">
-      {/* Background */}
+    <div className="min-h-screen bg-[#07070f] relative overflow-hidden">
+
+      {/* Background glows */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-20 -right-20 w-72 h-72 bg-violet-800/15 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-purple-800/15 rounded-full blur-3xl" />
+        <div className="absolute -top-32 -right-32 w-80 h-80 bg-violet-800/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-purple-800/10 rounded-full blur-3xl" />
       </div>
 
-      {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="relative z-10 max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 py-6 min-h-screen flex flex-col">
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between mb-5">
           <button
             onClick={() => navigate('/')}
-            className="text-gray-500 hover:text-gray-300 transition-colors text-sm flex items-center gap-1"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-400 transition-colors text-sm"
           >
             ← Exit
           </button>
-          
+
           <div className="flex items-center gap-3">
-            {streak >= 2 && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 rounded-full px-3 py-1"
-              >
-                <span className="text-orange-400 text-xs font-bold">🔥 {streak} streak</span>
-              </motion.div>
-            )}
-            
-            <div className="text-sm text-gray-400 font-medium">
-              <span className="text-white font-bold">{currentIndex + 1}</span>
-              <span className="text-gray-600"> / </span>
+            {/* Difficulty badge */}
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${diffConfig.bg} ${diffConfig.color}`}>
+              {diffConfig.label}
+            </span>
+
+            {/* Streak */}
+            <AnimatePresence>
+              {streak >= 2 && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  className="flex items-center gap-1 bg-orange-500/15 border border-orange-500/25 rounded-lg px-2.5 py-1"
+                >
+                  <span className="text-orange-400 text-xs font-black">🔥 {streak}x</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Question count */}
+            <div className="text-sm text-gray-500">
+              <span className="text-white font-black">{currentIndex + 1}</span>
+              <span className="text-gray-700"> / </span>
               <span>{totalQuestions}</span>
             </div>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full h-1.5 bg-white/5 rounded-full mb-8 overflow-hidden">
+        {/* ── Progress Bar ── */}
+        <div className="w-full h-1 bg-white/5 rounded-full mb-6 overflow-hidden">
           <motion.div
             className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
           />
         </div>
 
-        {/* Question Card */}
+        {/* ── Question ── */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
-            transition={{ duration: 0.25 }}
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ duration: 0.22 }}
             className="flex-1 flex flex-col"
           >
-            {/* Category & Timer Row */}
+            {/* Category + Timer */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{currentQuestion.emoji || '🧠'}</span>
-                <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">{currentQuestion.emoji || '🧠'}</span>
+                <span className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
                   {currentQuestion.category || 'Internet Culture'}
                 </span>
               </div>
@@ -222,52 +206,64 @@ export default function Quiz() {
               />
             </div>
 
-            {/* Question */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-              <p className="text-white text-xl font-semibold leading-relaxed">
+            {/* Question box */}
+            <div className="bg-white/[0.03] border border-white/8 rounded-2xl p-6 mb-5">
+              <p className="text-white text-xl font-bold leading-relaxed">
                 {currentQuestion.question}
               </p>
             </div>
 
             {/* Options */}
-            <div className="space-y-3">
+            <div className="space-y-2.5 flex-1">
               {currentQuestion.options?.map((option, idx) => (
                 <motion.button
                   key={`${currentIndex}-${idx}`}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.06 }}
-                  whileHover={!showFeedback ? { scale: 1.01 } : {}}
-                  whileTap={!showFeedback ? { scale: 0.99 } : {}}
                   onClick={() => handleAnswer(option)}
                   disabled={showFeedback}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all cursor-pointer ${getOptionStyle(option)}`}
+                  className={getOptionStyle(option)}
                 >
-                  <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-gray-500">
+                  {/* Option letter */}
+                  <span className="flex-shrink-0 w-8 h-8 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-xs font-black text-gray-500">
                     {String.fromCharCode(65 + idx)}
                   </span>
-                  <span className="flex-1 font-medium">{option}</span>
+                  <span className="flex-1 font-semibold text-sm sm:text-base">{option}</span>
+                  {/* Feedback icons */}
                   {showFeedback && option === currentQuestion.answer && (
-                    <span className="text-green-400 text-lg">✓</span>
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="text-green-400 text-xl flex-shrink-0"
+                    >
+                      ✓
+                    </motion.span>
                   )}
                   {showFeedback && option === selectedAnswer && option !== currentQuestion.answer && (
-                    <span className="text-red-400 text-lg">✗</span>
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="text-red-400 text-xl flex-shrink-0"
+                    >
+                      ✗
+                    </motion.span>
                   )}
                 </motion.button>
               ))}
             </div>
 
-            {/* Explanation (shown after answer) */}
+            {/* Explanation */}
             <AnimatePresence>
               {showFeedback && currentQuestion.explanation && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-4 bg-violet-900/20 border border-violet-500/20 rounded-xl p-3"
+                  className="mt-4 bg-violet-900/20 border border-violet-500/20 rounded-xl p-4"
                 >
-                  <p className="text-gray-300 text-sm">
-                    <span className="text-violet-400 font-semibold">💡 </span>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    <span className="text-violet-400 font-bold">💡 </span>
                     {currentQuestion.explanation}
                   </p>
                 </motion.div>
