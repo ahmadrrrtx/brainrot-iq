@@ -1,18 +1,15 @@
 // src/constants.js
-// ⚠️ NO API KEYS HERE - All secrets are in Vercel environment variables
-// API calls go through /api/ serverless functions
 
 export const APP_CONFIG = {
   name: 'BrainRot IQ',
   version: '2.0.0',
   url: 'https://brainrot-iq.vercel.app',
   description: 'Test your internet culture IQ',
-  apiBase: '/api', // Serverless functions base URL
 };
 
 export const QUIZ_CONFIG = {
   totalQuestions: 10,
-  timePerQuestion: 20, // seconds
+  timePerQuestion: 20,
   difficulties: {
     easy: {
       label: '😎 Easy Mode',
@@ -36,11 +33,11 @@ export const QUIZ_CONFIG = {
   scoring: {
     baseScore: 100,
     timeBonus: {
-      fast: { threshold: 5, bonus: 50 },   // Under 5 seconds
-      medium: { threshold: 10, bonus: 25 }, // Under 10 seconds
-      slow: { threshold: 15, bonus: 10 },   // Under 15 seconds
+      fast: { threshold: 5, bonus: 50 },
+      medium: { threshold: 10, bonus: 25 },
+      slow: { threshold: 15, bonus: 10 },
     },
-    streakBonus: 25, // Bonus per consecutive correct answer
+    streakBonus: 25,
   },
 };
 
@@ -53,17 +50,17 @@ export const IQ_TIERS = [
     description: 'You probably still use Internet Explorer',
     color: 'from-gray-500 to-gray-600',
     bgColor: 'bg-gray-900',
-    advice: 'Bro... go touch some grass and come back when you\'ve downloaded some internet culture',
+    advice: "Bro... go touch some grass and come back when you've downloaded some internet culture",
   },
   {
     min: 11,
     max: 20,
     label: 'Casual Scroller',
     emoji: '📱',
-    description: 'You\'ve seen memes before. In a museum.',
+    description: "You've seen memes before. In a museum.",
     color: 'from-blue-500 to-blue-600',
     bgColor: 'bg-blue-950',
-    advice: 'You\'ve opened TikTok at least once. Growth!',
+    advice: "You've opened TikTok at least once. Growth!",
   },
   {
     min: 21,
@@ -73,7 +70,7 @@ export const IQ_TIERS = [
     description: 'Living your best life, chronically mid',
     color: 'from-purple-500 to-purple-600',
     bgColor: 'bg-purple-950',
-    advice: 'You\'re giving main character energy but forgetting your lines',
+    advice: "You're giving main character energy but forgetting your lines",
   },
   {
     min: 36,
@@ -129,7 +126,11 @@ export const IQ_TIERS = [
 
 export const getIQTier = (score, total = 10) => {
   const percentage = Math.round((score / total) * 100);
-  return IQ_TIERS.find(tier => percentage >= tier.min && percentage <= tier.max) || IQ_TIERS[0];
+  return (
+    IQ_TIERS.find(
+      tier => percentage >= tier.min && percentage <= tier.max
+    ) || IQ_TIERS[0]
+  );
 };
 
 export const CATEGORIES = [
@@ -144,17 +145,3 @@ export const CATEGORIES = [
   'Sigma Culture',
   'Twitter/X Drama',
 ];
-
-export const SHARE_MESSAGES = [
-  (score, tier) => `just scored ${score}/10 on @BrainRotIQ and got "${tier}" 🧠 can you beat me? brainrot-iq.vercel.app`,
-  (score, tier) => `my brainrot IQ is "${tier}" with ${score}/10 correct 💀 take the quiz: brainrot-iq.vercel.app`,
-  (score, tier) => `${score}/10 on the brainrot quiz 🔥 they called me "${tier}" lmaooo brainrot-iq.vercel.app`,
-];
-
-export const SOUND_URLS = {
-  correct: '/sounds/correct.mp3',
-  wrong: '/sounds/wrong.mp3',
-  tick: '/sounds/tick.mp3',
-  complete: '/sounds/complete.mp3',
-  click: '/sounds/click.mp3',
-};
