@@ -1,47 +1,37 @@
+# BrainRot IQ - https://brainrot-iq.vercel.app
+# Robots.txt - Allow all crawlers
+
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
 
 # Sitemaps
 Sitemap: https://brainrot-iq.vercel.app/sitemap.xml
 
-# Crawl-delay for bots
+# Crawl delay (be nice to servers)
 Crawl-delay: 10
 
-# Block unnecessary paths
-Disallow: /api/
-Disallow: /_vercel/
-Disallow: /node_modules/
-
-# Allow major search engines
+# Google specific
 User-agent: Googlebot
 Allow: /
 Crawl-delay: 5
 
+# Bing specific
 User-agent: Bingbot
 Allow: /
 Crawl-delay: 10
 
-User-agent: Slurp
+# Allow social media crawlers for previews
+User-agent: Twitterbot
 Allow: /
 
-User-agent: DuckDuckBot
+User-agent: facebookexternalhit
 Allow: /
 
-# AI crawlers - allow for AEO
-User-agent: GPTBot
+User-agent: LinkedInBot
 Allow: /
 
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: CCBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: Claude-Web
-Allow: /
-
-User-agent: PerplexityBot
+User-agent: WhatsApp
 Allow: /
