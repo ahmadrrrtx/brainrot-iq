@@ -1,33 +1,43 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { resolve } from "path";
+// vite.config.js
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  resolve: {
-    alias: {
-      "@": resolve(__dirname, "./src"),
-    },
-  },
+  
   build: {
-    outDir: "dist",
+    outDir: 'dist',
     sourcemap: false,
-    minify: "terser",
+    minify: 'terser',
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          supabase: ["@supabase/supabase-js"],
+          'react-vendor': ['react', 'react-dom'],
+          'router': ['react-router-dom'],
+          'motion': ['framer-motion'],
+          'supabase': ['@supabase/supabase-js'],
         },
       },
     },
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 600,
   },
+  
   server: {
     port: 3000,
     open: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
+  
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+  },
+  
   optimizeDeps: {
-    include: ["react", "react-dom", "react-router-dom"],
+    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
   },
 });
