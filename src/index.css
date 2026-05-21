@@ -2,27 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ══════════════════════════════════════════════ */
-/*                 CSS VARIABLES                 */
-/* ══════════════════════════════════════════════ */
+/* ============================================
+   ROOT & THEME
+   ============================================ */
 :root {
-  --bg-primary: #0a0a14;
-  --bg-secondary: #12121f;
-  --bg-card: #16162a;
-  --accent-purple: #7c3aed;
-  --accent-pink: #ec4899;
-  --accent-cyan: #06b6d4;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --border-color: rgba(124, 58, 237, 0.2);
-  --glow-purple: rgba(124, 58, 237, 0.5);
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --color-bg: #0a0a14;
+  --color-surface: #12121f;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-text: #ffffff;
+  --color-text-muted: #6b7280;
+  --color-primary: #7c3aed;
+  --color-primary-light: #9f67fa;
+  --font-sans: 'Inter', 'Space Grotesk', system-ui, sans-serif;
 }
 
-/* ══════════════════════════════════════════════ */
-/*                 BASE STYLES                   */
-/* ══════════════════════════════════════════════ */
-* {
+/* ============================================
+   BASE STYLES
+   ============================================ */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -30,14 +27,15 @@
 
 html {
   scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.6;
@@ -45,254 +43,176 @@ body {
 
 #root {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  isolation: isolate;
 }
 
-/* ══════════════════════════════════════════════ */
-/*              CUSTOM SCROLLBAR                 */
-/* ══════════════════════════════════════════════ */
+/* ============================================
+   SCROLLBAR
+   ============================================ */
 ::-webkit-scrollbar {
   width: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--color-bg);
 }
-
 ::-webkit-scrollbar-thumb {
-  background: var(--accent-purple);
+  background: rgba(124, 58, 237, 0.4);
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #9333ea;
+  background: rgba(124, 58, 237, 0.7);
 }
 
-/* ══════════════════════════════════════════════ */
-/*              SELECTION STYLES                 */
-/* ══════════════════════════════════════════════ */
-::selection {
-  background: rgba(124, 58, 237, 0.4);
-  color: white;
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 58, 237, 0.4) var(--color-bg);
 }
 
-/* ══════════════════════════════════════════════ */
-/*              COMPONENT CLASSES                */
-/* ══════════════════════════════════════════════ */
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+/* ============================================
+   INTERACTIVE ELEMENTS
+   ============================================ */
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  color: var(--color-text);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
 @layer components {
-  /* Glass card effect */
-  .glass-card {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
   }
-
-  .glass-card:hover {
-    @apply border-purple-500/30;
-    box-shadow: 0 8px 40px rgba(124, 58, 237, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  
+  .glass-hover {
+    @apply hover:bg-white/8 hover:border-white/15 transition-all;
   }
-
-  /* Neon button */
-  .btn-neon {
-    @apply relative px-8 py-4 font-bold text-white rounded-xl overflow-hidden transition-all duration-300;
-    background: linear-gradient(135deg, #7c3aed, #9333ea);
-    box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+  
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-violet-900/30 active:scale-95;
   }
-
-  .btn-neon:hover {
-    @apply scale-105;
-    box-shadow: 0 0 30px rgba(124, 58, 237, 0.7), 0 0 60px rgba(124, 58, 237, 0.3);
+  
+  .btn-secondary {
+    @apply px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-300 font-medium rounded-xl transition-all;
   }
-
-  .btn-neon:active {
-    @apply scale-95;
+  
+  .card {
+    @apply bg-white/5 border border-white/10 rounded-2xl;
   }
-
-  /* Ghost button */
-  .btn-ghost {
-    @apply px-6 py-3 font-semibold text-purple-300 rounded-xl border border-purple-500/30 transition-all duration-300;
-  }
-
-  .btn-ghost:hover {
-    @apply bg-purple-500/10 border-purple-500/60 text-white;
-  }
-
-  /* Option button */
-  .option-btn {
-    @apply w-full text-left p-4 rounded-xl border border-white/10 transition-all duration-200 font-medium;
-    background: rgba(255, 255, 255, 0.03);
-  }
-
-  .option-btn:hover:not(:disabled) {
-    @apply border-purple-500/50;
-    background: rgba(124, 58, 237, 0.1);
-    transform: translateX(4px);
-  }
-
-  .option-btn.correct {
-    @apply border-green-400/60 text-green-300;
-    background: rgba(74, 222, 128, 0.1);
-  }
-
-  .option-btn.incorrect {
-    @apply border-red-400/60 text-red-300;
-    background: rgba(248, 113, 113, 0.1);
-  }
-
-  .option-btn.selected {
-    @apply border-purple-500/60 text-purple-200;
-    background: rgba(124, 58, 237, 0.15);
-  }
-
-  /* Gradient text */
+  
   .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #c084fc, #7c3aed, #06b6d4);
+    @apply bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent;
   }
-
-  .gradient-text-pink {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #f472b6, #ec4899, #a855f7);
-  }
-
-  /* Neon glow effects */
-  .glow-purple {
-    box-shadow: 0 0 20px rgba(124, 58, 237, 0.6);
-  }
-
-  .text-glow {
-    text-shadow: 0 0 20px rgba(124, 58, 237, 0.8), 0 0 40px rgba(124, 58, 237, 0.4);
-  }
-
-  /* Progress bar */
-  .progress-bar {
-    @apply h-2 rounded-full overflow-hidden bg-white/10;
-  }
-
-  .progress-fill {
-    @apply h-full rounded-full transition-all duration-500;
-    background: linear-gradient(90deg, #7c3aed, #c084fc, #06b6d4);
-    box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
-  }
-
-  /* Badge */
-  .badge {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
-  }
-
-  /* Animated background grid */
-  .bg-grid {
-    background-image: linear-gradient(rgba(124, 58, 237, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124, 58, 237, 0.05) 1px, transparent 1px);
-    background-size: 50px 50px;
-  }
-
-  /* Input styles */
-  .input-neon {
-    @apply w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/30 outline-none transition-all duration-300 font-sans;
-  }
-
-  .input-neon:focus {
-    @apply border-purple-500/60;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
-  }
-
-  /* Leaderboard rank styles */
-  .rank-1 {
-    @apply text-yellow-400;
-    text-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
-  }
-
-  .rank-2 {
-    @apply text-slate-300;
-    text-shadow: 0 0 10px rgba(203, 213, 225, 0.6);
-  }
-
-  .rank-3 {
-    @apply text-orange-400;
-    text-shadow: 0 0 10px rgba(251, 146, 60, 0.6);
+  
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
-/* ══════════════════════════════════════════════ */
-/*                  ANIMATIONS                   */
-/* ══════════════════════════════════════════════ */
-@layer utilities {
-  .animate-delay-100 { animation-delay: 100ms; }
-  .animate-delay-200 { animation-delay: 200ms; }
-  .animate-delay-300 { animation-delay: 300ms; }
-  .animate-delay-500 { animation-delay: 500ms; }
-  .animate-delay-700 { animation-delay: 700ms; }
-  .animate-delay-1000 { animation-delay: 1000ms; }
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-12px) rotate(3deg); }
+  66% { transform: translateY(-6px) rotate(-2deg); }
 }
 
-/* ══════════════════════════════════════════════ */
-/*           PARTICLE BACKGROUND                 */
-/* ══════════════════════════════════════════════ */
-.particle {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  animation: floatParticle linear infinite;
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.6); }
 }
 
-@keyframes floatParticle {
-  0% { transform: translateY(100vh) scale(0); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(-100px) scale(1); opacity: 0; }
-}
-
-/* ══════════════════════════════════════════════ */
-/*           LOADING SKELETON                    */
-/* ══════════════════════════════════════════════ */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255,255,255,0.03) 25%,
-    rgba(255,255,255,0.08) 50%,
-    rgba(255,255,255,0.03) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }
 
-/* ══════════════════════════════════════════════ */
-/*            QUIZ OPTION LETTERS               */
-/* ══════════════════════════════════════════════ */
-.option-letter {
-  @apply inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold flex-shrink-0;
-  background: rgba(124, 58, 237, 0.2);
-  border: 1px solid rgba(124, 58, 237, 0.3);
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
-/* ══════════════════════════════════════════════ */
-/*            COUNTDOWN RING                    */
-/* ══════════════════════════════════════════════ */
-.countdown-ring {
-  transform-origin: center;
-  animation: countdownPulse 1s ease-in-out infinite;
+.animate-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
 }
 
-@keyframes countdownPulse {
-  0%, 100% { stroke-width: 4; }
-  50% { stroke-width: 6; }
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
 }
 
-/* ══════════════════════════════════════════════ */
-/*           MOBILE RESPONSIVE                   */
-/* ══════════════════════════════════════════════ */
+/* Loading shimmer */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* ============================================
+   RESPONSIVE HELPERS
+   ============================================ */
 @media (max-width: 640px) {
-  .glass-card {
-    @apply rounded-xl;
+  html {
+    font-size: 15px;
   }
+  
+  h1 {
+    font-size: clamp(2rem, 10vw, 4rem);
+  }
+}
 
-  .btn-neon {
-    @apply px-6 py-3 text-sm;
+/* Safe area for mobile notches */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+}
+
+/* ============================================
+   SELECTION
+   ============================================ */
+::selection {
+  background: rgba(124, 58, 237, 0.4);
+  color: white;
 }
