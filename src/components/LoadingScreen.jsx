@@ -1,62 +1,102 @@
-import { useEffect, useState } from "react";
-import { LOADING_MESSAGES } from "../constants";
+// src/components/LoadingScreen.jsx
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function LoadingScreen({ message }) {
-  const [msgIndex, setMsgIndex] = useState(0);
-  const [dots, setDots] = useState("");
+const LOADING_TIPS = [
+  'Consulting the brainrot archives... 📚',
+  'Scanning TikTok for questions... 📱',
+  'Downloading sigma energy... 💪',
+  'Calibrating rizz detector... ✨',
+  'Processing meme database... 🧠',
+  'Checking chronically online metrics... 📊',
+  'Loading internet culture data... 🌐',
+];
+
+export default function LoadingScreen({ message = 'Loading...', submessage = '' }) {
+  const [tipIndex, setTipIndex] = useState(0);
+  const [dots, setDots] = useState('');
 
   useEffect(() => {
-    const msgTimer = setInterval(() => {
-      setMsgIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    const tipInterval = setInterval(() => {
+      setTipIndex(prev => (prev + 1) % LOADING_TIPS.length);
     }, 2000);
-    return () => clearInterval(msgTimer);
-  }, []);
-
-  useEffect(() => {
-    const dotTimer = setInterval(() => {
-      setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
+    
+    const dotsInterval = setInterval(() => {
+      setDots(prev => prev.length >= 3 ? '' : prev + '.');
     }, 400);
-    return () => clearInterval(dotTimer);
+    
+    return () => {
+      clearInterval(tipInterval);
+      clearInterval(dotsInterval);
+    };
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      {/* Animated Brain */}
-      <div className="relative mb-8">
-        <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl animate-float"
-          style={{
-            background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(236,72,153,0.2))",
-            border: "2px solid rgba(124,58,237,0.4)",
-            boxShadow: "0 0 40px rgba(124,58,237,0.3)",
-          }}>
-          🧠
-        </div>
-        {/* Orbiting dot */}
-        <div className="absolute inset-0 animate-spin-slow">
-          <div className="w-3 h-3 bg-purple-400 rounded-full absolute -top-1 left-1/2 -translate-x-1/2"
-            style={{ boxShadow: "0 0 8px rgba(124,58,237,0.8)" }} />
-        </div>
+    <div className="min-h-screen bg-[#0a0a14] flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-72 h-72 bg-violet-800/15 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-purple-800/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
-      {/* Loading bar */}
-      <div className="w-64 h-1.5 bg-white/10 rounded-full overflow-hidden mb-6">
-        <div
-          className="h-full rounded-full animate-pulse"
-          style={{
-            background: "linear-gradient(90deg, #7c3aed, #c084fc, #06b6d4)",
-            animation: "shimmer 1.5s infinite",
-            backgroundSize: "200% 100%",
+      <div className="relative z-10 text-center">
+        {/* Brain Animation */}
+        <motion.div
+          animate={{ 
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0],
           }}
-        />
+          transition={{ 
+            duration: 2, 
+            repeat: Infinity,
+            ease: 'easeInOut' 
+          }}
+          className="text-8xl mb-6 select-none"
+        >
+          🧠
+        </motion.div>
+
+        {/* Progress Ring */}
+        <div className="relative w-16 h-16 mx-auto mb-6">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+            <circle
+              cx="32" cy="32" r="28"
+              fill="none"
+              stroke="rgba(124,58,237,0.15)"
+              strokeWidth="4"
+            />
+            <motion.circle
+              cx="32" cy="32" r="28"
+              fill="none"
+              stroke="#7c3aed"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray="175.93"
+              animate={{ strokeDashoffset: [175.93, 0, 175.93] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </svg>
+        </div>
+
+        {/* Message */}
+        <h2 className="text-white text-xl font-bold mb-2">
+          {message}{dots}
+        </h2>
+        
+        {/* Rotating Tips */}
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={tipIndex}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="text-gray-500 text-sm"
+          >
+            {submessage || LOADING_TIPS[tipIndex]}
+          </motion.p>
+        </AnimatePresence>
       </div>
-
-      {/* Message */}
-      <p className="text-white/80 font-medium text-center max-w-xs animate-fade-in" key={msgIndex}>
-        {message || LOADING_MESSAGES[msgIndex]}
-        <span className="text-purple-400">{dots}</span>
-      </p>
-
-      <p className="text-white/30 text-sm mt-3">Powered by Groq AI ⚡</p>
     </div>
   );
 }
